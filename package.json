@@ -1,0 +1,23 @@
+{
+  "name": "express-starter",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node ./bin/www.cjs"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.0.0",
+    "debug": "~2.6.9",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-session": "^1.18.1",
+    "express-ws": "^5.0.2",
+    "http": "^0.0.1-security",
+    "js-priority-queue": "^0.1.5",
+    "mongoose": "^8.8.2",
+    "morgan": "~1.9.1",
+    "msal-node-wrapper": "https://gitpkg.now.sh/kylethayer/ms-identity-javascript-nodejs-tutorial-msal-node-v2-/Common/msal-node-wrapper?main",
+    "ws": "^8.18.0"
+  }
+}

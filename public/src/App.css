@@ -1,0 +1,153 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #1c1c1c;
+  font-family: 'Micro 5', sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+.queue-view h2 {
+  color:white;
+  font-size: 40px;
+  justify-content: center;
+  align-items: center;
+}
+
+.queue-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50%;
+  text-align: center;
+  flex-direction: column;
+}
+
+.game-start {
+  color: white;
+  text-align: center;
+}
+
+
+.chat-output {
+  flex: 1;
+  height: 300px; /* Set a fixed height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding: 10px;
+  background-color: #1c1c1c;
+  border: 1px solid #8D8D8D;
+}
+
+.chat-output::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-message {
+  color: white;
+  font-size: 20px;
+}
+
+.chat-input {
+  width: 714px;
+  height: 34px;
+  background-color: #1c1c1c;
+  color: white;
+  font-size: 20px;
+}
+
+input.chat-input, .chat-send-button, .queue-view button, .gameover-popup button {
+  font-family: "Micro 5", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.chat-send-button {
+  padding: 12px 30px;
+  border: none;
+  background-color: #9d9d9d;
+  color: black;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.spinner {
+  border: 12px solid #f3f3f3; 
+  border-top: 12px solid #1c1c1c; 
+  border-radius: 50%; 
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite; 
+  margin-top: 20px;
+  display: block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.queue-view button {
+  border: none;
+  background-color: red;
+  border-radius: 10px;
+  font-size: 50px;
+  margin-top: 50px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.quit-link {
+  text-decoration: none;
+  color: white;
+  padding: 14px 60px;
+}
+
+.gameover-link {
+  text-decoration: none;
+  color: white;
+  padding: 14px 60px;
+  font-size: 30px;
+}
+
+.gameover-popup {
+  font-size: 30px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #1c1c1c;
+  border: 2px solid #8D8D8D;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  z-index: 1000; /* Ensure it's above other content */
+}
+
+.gameover-popup button {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: red;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.board-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login {
+  display: flex;
+  justify-content: center;
+  height: 100vh;
+  align-items: center;
+}
+
+
+
