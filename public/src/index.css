@@ -1,5 +1,10 @@
+/* 
+  Global Styles
+  - Sets the default font for the entire application.
+  - Ensures consistent typography across all pages.
+*/
 body {
-  font-family: "Micro 5", sans-serif;
-  font-weight: 400;
-  font-style: normal;
+  font-family: "Micro 5", sans-serif; /* Custom font for unique styling */
+  font-weight: 400; /* Default font weight */
+  font-style: normal; /* Default font style */
 }
