@@ -1,153 +1,226 @@
+/* 
+  Global Styles 
+  - Sets the default page layout and styling for the entire application.
+*/
 body {
-  margin: 0;
-  padding: 0;
-  background-color: #1c1c1c;
-  font-family: 'Micro 5', sans-serif;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+  margin: 0; /* Removes default margin */
+  padding: 0; /* Removes default padding */
+  background-color: #1c1c1c; /* Dark background theme */
+  font-family: 'Micro 5', sans-serif; /* Custom font */
+  height: 100vh; /* Ensures full viewport height */
+  display: flex; /* Enables flexbox for layout */
+  flex-direction: column; /* Stacks elements vertically */
 }
 
-
-
+/* 
+  Queue View Styles
+  - Styles the matchmaking queue interface.
+*/
 .queue-view h2 {
-  color:white;
-  font-size: 40px;
-  justify-content: center;
-  align-items: center;
+  color: white; /* White text color */
+  font-size: 40px; /* Large text */
+  justify-content: center; /* Centers text horizontally */
+  align-items: center; /* Centers text vertically */
 }
 
+/* 
+  Queue View Layout
+  - Centers the queue view content in the page.
+*/
 .queue-view {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 50%;
-  text-align: center;
-  flex-direction: column;
+  display: flex; /* Enables flexbox */
+  justify-content: center; /* Centers content horizontally */
+  align-items: center; /* Centers content vertically */
+  height: 50%; /* Restricts height to half of the viewport */
+  text-align: center; /* Ensures text is centered */
+  flex-direction: column; /* Stacks child elements vertically */
 }
 
+/* 
+  Game Start Section
+  - Displays the "Game Start" message.
+*/
 .game-start {
-  color: white;
-  text-align: center;
+  color: white; /* White text color */
+  text-align: center; /* Centers text */
 }
 
-
+/* 
+  Chat Output Area
+  - Styles the chat display where messages appear.
+*/
 .chat-output {
-  flex: 1;
-  height: 300px; /* Set a fixed height */
-  overflow-y: auto; /* Enable vertical scrolling */
-  padding: 10px;
-  background-color: #1c1c1c;
-  border: 1px solid #8D8D8D;
+  flex: 1; /* Allows flexible height adjustment */
+  height: 300px; /* Fixed height */
+  overflow-y: auto; /* Enables vertical scrolling when needed */
+  padding: 10px; /* Adds spacing inside the chat */
+  background-color: #1c1c1c; /* Dark background color */
+  border: 1px solid #8D8D8D; /* Adds a border for visibility */
 }
 
+/* 
+  Hides scrollbar in chat output (for WebKit browsers like Chrome & Safari).
+*/
 .chat-output::-webkit-scrollbar {
-  display: none;
+  display: none; /* Hides scrollbar */
 }
 
+/* 
+  Chat Message Styling
+  - Defines appearance of each message in the chat.
+*/
 .chat-message {
-  color: white;
-  font-size: 20px;
+  color: white; /* White text */
+  font-size: 20px; /* Sets message text size */
 }
 
+/* 
+  Chat Input Field
+  - Styles the text input box for sending messages.
+*/
 .chat-input {
-  width: 714px;
-  height: 34px;
-  background-color: #1c1c1c;
-  color: white;
-  font-size: 20px;
+  width: 714px; /* Fixed width */
+  height: 34px; /* Fixed height */
+  background-color: #1c1c1c; /* Matches background theme */
+  color: white; /* White text */
+  font-size: 20px; /* Ensures text is readable */
 }
 
-input.chat-input, .chat-send-button, .queue-view button, .gameover-popup button {
+/* 
+  Common Font Styles
+  - Ensures consistency across various UI elements.
+*/
+input.chat-input, 
+.chat-send-button, 
+.queue-view button, 
+.gameover-popup button {
   font-family: "Micro 5", sans-serif;
   font-weight: 400;
   font-style: normal;
 }
 
+/* 
+  Chat Send Button
+  - Styles the button used to send messages.
+*/
 .chat-send-button {
-  padding: 12px 30px;
-  border: none;
-  background-color: #9d9d9d;
-  color: black;
-  cursor: pointer;
-  font-size: 16px;
+  padding: 12px 30px; /* Adds padding for button size */
+  border: none; /* Removes default border */
+  background-color: #9d9d9d; /* Grey button background */
+  color: black; /* Black text */
+  cursor: pointer; /* Changes cursor to pointer on hover */
+  font-size: 16px; /* Adjusts text size */
 }
 
+/* 
+  Loading Spinner
+  - Displays an animated spinner for loading states.
+*/
 .spinner {
-  border: 12px solid #f3f3f3; 
-  border-top: 12px solid #1c1c1c; 
-  border-radius: 50%; 
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite; 
-  margin-top: 20px;
-  display: block;
+  border: 12px solid #f3f3f3; /* Light gray outer border */
+  border-top: 12px solid #1c1c1c; /* Dark inner border */
+  border-radius: 50%; /* Makes it circular */
+  width: 40px; /* Fixed size */
+  height: 40px; /* Fixed size */
+  animation: spin 1s linear infinite; /* Rotates continuously */
+  margin-top: 20px; /* Adds spacing */
+  display: block; /* Ensures proper display */
 }
 
+/* 
+  Keyframes for Spinner Animation
+  - Rotates the spinner in a loop.
+*/
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); } /* Start position */
+  100% { transform: rotate(360deg); } /* Full rotation */
 }
 
+/* 
+  Quit Button Styling
+  - Styles the quit button in the queue view.
+*/
 .queue-view button {
-  border: none;
-  background-color: red;
-  border-radius: 10px;
-  font-size: 50px;
-  margin-top: 50px;
-  padding-top: 14px;
-  padding-bottom: 14px;
+  border: none; /* Removes border */
+  background-color: red; /* Red background */
+  border-radius: 10px; /* Rounded corners */
+  font-size: 50px; /* Large button text */
+  margin-top: 50px; /* Adds spacing above */
+  padding-top: 14px; /* Adds padding */
+  padding-bottom: 14px; /* Adds padding */
 }
+
+/* 
+  Quit Link Styling
+  - Styles the text inside the quit button.
+*/
 .quit-link {
-  text-decoration: none;
-  color: white;
-  padding: 14px 60px;
+  text-decoration: none; /* Removes underline */
+  color: white; /* White text */
+  padding: 14px 60px; /* Adds spacing */
 }
 
+/* 
+  Game Over Link
+  - Styles the "Go to Home" button after a match ends.
+*/
 .gameover-link {
-  text-decoration: none;
-  color: white;
-  padding: 14px 60px;
-  font-size: 30px;
+  text-decoration: none; /* Removes underline */
+  color: white; /* White text */
+  padding: 14px 60px; /* Adds spacing */
+  font-size: 30px; /* Sets text size */
 }
 
+/* 
+  Game Over Popup
+  - Displays a message when the game ends.
+*/
 .gameover-popup {
-  font-size: 30px;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #1c1c1c;
-  border: 2px solid #8D8D8D;
-  color: white;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-  z-index: 1000; /* Ensure it's above other content */
+  font-size: 30px; /* Large text size */
+  position: fixed; /* Keeps popup fixed in place */
+  top: 50%; /* Centers vertically */
+  left: 50%; /* Centers horizontally */
+  transform: translate(-50%, -50%); /* Ensures exact centering */
+  background-color: #1c1c1c; /* Dark background */
+  border: 2px solid #8D8D8D; /* Light gray border */
+  color: white; /* White text */
+  padding: 20px; /* Adds spacing */
+  border-radius: 10px; /* Rounded corners */
+  text-align: center; /* Centers text */
+  z-index: 1000; /* Ensures it appears above other content */
 }
 
+/* 
+  Game Over Popup Button
+  - Styles the button inside the game over popup.
+*/
 .gameover-popup button {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: red;
-  color: white;
-  border: none;
-  cursor: pointer;
-  border-radius: 5px;
+  margin-top: 10px; /* Adds spacing above button */
+  padding: 10px; /* Adds padding */
+  background-color: red; /* Red button */
+  color: white; /* White text */
+  border: none; /* Removes border */
+  cursor: pointer; /* Changes cursor to pointer on hover */
+  border-radius: 5px; /* Rounded corners */
 }
 
+/* 
+  Board View Layout
+  - Centers game board on the screen.
+*/
 .board-view {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex; /* Enables flexbox */
+  justify-content: center; /* Centers content horizontally */
+  align-items: center; /* Centers content vertically */
 }
 
+/* 
+  Login Page Layout
+  - Centers login form on the screen.
+*/
 .login {
-  display: flex;
-  justify-content: center;
-  height: 100vh;
-  align-items: center;
+  display: flex; /* Enables flexbox */
+  justify-content: center; /* Centers content horizontally */
+  height: 100vh; /* Full viewport height */
+  align-items: center; /* Centers content vertically */
 }
-
-
-
