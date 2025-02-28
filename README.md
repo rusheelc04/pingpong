@@ -1,22 +1,25 @@
-# Multiplayer Pong Web Application
+# Multiplayer Pong Web Application – Technical Documentation
 
 **Group Members:** Munir Emam, Rusheel Chande, Dhruv Ashok, Alex Han  
 **Web App URL:** [https://pong441.onrender.com/](https://pong441.onrender.com/)  
 **Class Project:** INFO 441 - Server-Side Development, Fall Quarter 2024  
 
-## Project Overview
+---
 
-This is a **full-stack web application** designed to allow users to play **real-time multiplayer Pong** against each other over the internet, utilizing **WebSockets for real-time game state synchronization**. The application includes **competitive matchmaking with an ELO-based ranking system**, a **global leaderboard**, and **real-time in-game chat**.
+## **Project Overview**
+This is a **full-stack web application** that allows users to play **real-time multiplayer Pong** over the internet. The application supports **matchmaking based on ELO rankings**, a **global leaderboard**, and **real-time chat functionality**.
 
-The application is built with a **React.js frontend, a Node.js/Express backend, and a MongoDB database**. It uses **Microsoft Azure Active Directory (Azure AD)** for authentication, ensuring that only **University of Washington (UW) students** can log in and play. The **game physics and real-time updates** are handled using **WebSockets**, allowing smooth gameplay with synchronized paddle and ball movement.
+It is built with a **React.js frontend, a Node.js/Express backend, and a MongoDB database**. Authentication is handled via **Microsoft Azure Active Directory (Azure AD)**, ensuring that only **University of Washington (UW) students** can log in and play. **WebSockets are used for real-time game updates**, ensuring smooth paddle movement, ball physics, and scoring updates.
+
+---
 
 ## **Architecture**
+The application follows a **client-server architecture** where the **frontend (React.js) communicates with the backend (Node.js/Express)** through **REST API requests and WebSockets**. The **backend manages authentication, matchmaking, and game state**, while the **MongoDB database stores user information, game history, and chat messages**.
 
-![architectural diagram](diagrams/architectural.png)
+---
 
 ## **Data Flow**
-
-![data flow diagram](diagrams/data_flow.png)
+When a user logs in via **Azure AD**, their **session is managed using Express sessions**. Once authenticated, they can **join the matchmaking queue**. When two players with similar **ELO rankings** are found, a **new game session is created**, and **WebSockets handle real-time game synchronization**. The **game server ensures fairness by maintaining the authoritative game state**, and **after the match**, the results are stored in **MongoDB**, updating the **ELO rankings** and **leaderboard**.
 
 ---
 
@@ -41,6 +44,7 @@ The application is built with a **React.js frontend, a Node.js/Express backend, 
 ---
 
 ## **Endpoints and API Reference**
+The backend exposes the following **REST API endpoints**:
 
 ### **User Authentication (`/user`)**
 | Method | Endpoint          | Description |
@@ -52,7 +56,7 @@ The application is built with a **React.js frontend, a Node.js/Express backend, 
 ### **Game Management (`/games`)**
 | Method | Endpoint          | Description |
 |--------|------------------|-------------|
-| **GET** | `/games/list` | Retrieves a list of all games played by the logged-in user |
+| **GET** | `/games/list` | Retrieves all games played by the logged-in user |
 | **POST** | `/games` | Creates a new game entry after a match ends |
 
 ### **Real-Time Chat (`/messages`)**
@@ -70,16 +74,3 @@ The application is built with a **React.js frontend, a Node.js/Express backend, 
 | Method | Endpoint          | Description |
 |--------|------------------|-------------|
 | **POST** | `/matchmaking/find` | Finds an opponent with similar ELO using a priority queue |
-
----
-
-## **Database Schemas**
-### **User Schema (`users` Collection)**
-```json
-{
-    "user_id": ObjectId,
-    "username": "String (Unique)",
-    "elo": Number,
-    "createdAt": "Date",
-    "updatedAt": "Date"
-}
