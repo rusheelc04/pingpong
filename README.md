@@ -151,3 +151,7 @@ The following schemas define the **MongoDB database structure**, storing **user 
 - Each game session has a **unique chat room** (`chatRoomId`).
 - **WebSockets (`/chat`)** enable **real-time messaging**.
 - Messages are **persisted in MongoDB**, so players can review them later.
+
+## **Conclusion**
+This project demonstrates the implementation of **real-time multiplayer gameplay** using **WebSockets**, **ELO-based matchmaking**, and **secure authentication with Microsoft Azure AD**. The backend efficiently manages **game sessions, matchmaking, and leaderboard updates**, while the frontend provides an interactive user experience with **React.js**. With a **MongoDB database for persistent storage**, the system ensures accurate tracking of **player statistics, match history, and chat interactions**. This application highlights **core server-side development principles**, including **authentication, real-time communication, and scalable database management**.
+
