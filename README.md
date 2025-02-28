@@ -77,3 +77,22 @@ The backend exposes the following **REST API endpoints**:
 | Method | Endpoint          | Description |
 |--------|------------------|-------------|
 | **POST** | `/matchmaking/find` | Finds an opponent with similar ELO using a priority queue |
+
+---
+
+## **Database Schemas**
+The following schemas define the **MongoDB database structure**, storing **user data, game history, and chat messages**.
+
+### **User Schema (`users` Collection)**
+```json
+{
+    "user_id": "ObjectId",
+    "username": "String (Unique)",
+    "elo": "Number",
+    "createdAt": "Date",
+    "updatedAt": "Date"
+}
+
+- username: The unique identifier for the user.
+- elo: The user's **ELO rating**, used for matchmaking.
+- createdAt, updatedAt: Track when the user was created or last updated.
