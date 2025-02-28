@@ -1,82 +1,85 @@
-Group: Munir Emam, Rusheel Chande, Dhruv Ashok, Alex Han
+# Multiplayer Pong Web Application
 
-Access the web app at: https://pong441.onrender.com/
+**Group Members:** Munir Emam, Rusheel Chande, Dhruv Ashok, Alex Han  
+**Web App URL:** [https://pong441.onrender.com/](https://pong441.onrender.com/)  
+**Class Project:** INFO 441 - Server-Side Development, Fall Quarter 2024  
 
-# Target Audience
-Our target audience is people who enjoy playing pong and would like to play with others over the internet. We would like to create a web app that lets users compete with randoms in competitive games where they can get a chance to be on the leaderboard. 
-Users who are also seeking engaging interactions with others can do so using the live chat. We recognize the importance of interactions within multiplayer games and having a live chat will emphasize that. We also think that competitiveness is important and to promote this users who excel can have their names on a global leaderboard.
+## Project Overview
 
-# Why use our application?
-Our audience, as fans of pong or video games in general, will want a way to play with others online when playing in person is not an option. They want an experience that replicates a synchronous game of pong where they can communicate and compete with their opponent. Our application will provide this platform, allowing users to compete, see their position on the leaderboard, and socialize with other people with the same interests. Users will be able to enjoy a simple game of multiplayer pong no matter where they are located.
+This is a **full-stack web application** designed to allow users to play **real-time multiplayer Pong** against each other over the internet, utilizing **WebSockets for real-time game state synchronization**. The application includes **competitive matchmaking with an ELO-based ranking system**, a **global leaderboard**, and **real-time in-game chat**.
 
-# Why we want to build the application
-Pong is a classic game that was traditionally developed to be played in person at arcades or on the same video console. For many, Pong was the first video game they played and the game brings back fond memories of their childhood. While many other games such as chess have online multiplayer websites with a rating system and leaderboards, we noticed the lack of a similar website for Pong. As such, we would like to develop such an application to allow experienced players to relive the experience from the comfort of their own homes, as well as introduce those who have never played to the simple joys of the game.
+The application is built with a **React.js frontend, a Node.js/Express backend, and a MongoDB database**. It uses **Microsoft Azure Active Directory (Azure AD)** for authentication, ensuring that only **University of Washington (UW) students** can log in and play. The **game physics and real-time updates** are handled using **WebSockets**, allowing smooth gameplay with synchronized paddle and ball movement.
 
-To better simulate the in-person element of Pong, players are enabled to interact in our application via a live chat. As stated before, we extend the in-person version of Pong by adding an ELO-based rating system used to match people who want to play randomly. These features are useful for our users, but also present interesting technical challenges for us as developers, such as real-time communication via Websockets, content moderation, rating algorithms, and randomized game matching.
+## **Architecture**
 
-Overall, it is a combination of the lack of an existing solution and technical challenges of building such a solution that persuade us as developers to build this application.
-
-# Architectural Diagram
 ![architectural diagram](diagrams/architectural.png)
 
-# Data Flow
+## **Data Flow**
+
 ![data flow diagram](diagrams/data_flow.png)
 
-# User Stories
-| Priority | User      | Description                                        | Technical Implementation                                                                                                                                                                 |
-|----------|-----------|----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| P0       | As a user | I want to create an account and log in and out of it | When logging in, users will authenticate via Azure and will be stored in the ‘Users’ database.                                                                                           |
-| P0       | As a user | I want to be able to play a game of pong against an opponent online | When starting a game, create a new game in the ‘Game’ database and use Websockets to enable real-time multiplayer.                                                                      |
-| P1       | As a user | I want to be matched against a user of a similar skill level to me | Once logged in, fetch the ELO rating from the ‘Users’ database. Then, use Websockets to determine which other users are waiting to be matched and randomly match users within an ELO threshold. |
-| P1       | As a user | I want to be able to send messages to my opponents while in-game | Once logged in and matched to a game, use Websockets to send messages to both users in the game session and continually poll for any new messages.                                       |
-| P2       | As a user | I want to be able to see my match history          | Once logged in, fetch from the game endpoint and display all games the user has played, showing the final score, time played, and ELO rating.                                           |
-| P2       | As a user | I want to see how well I am doing against everyone else who is playing Pong | Once logged in, fetch every user from the ‘Users’ database and sort them in descending order by their stored ELO rating.                                                                 |
-| P2       | As a user | I want to be able to play Pong against my friends  | Once logged in, create a new game in the ‘Game’ database containing the two player IDs and redirect them both to that new game session.                                                  |
+---
 
-# Endpoints 
-/user  
-GET /user/login - user login to their account  
-POST /user/signup - lets the user create a new account  
-GET /user/profile - get all the profile information about the user  
-PUT /user/profile - can update the existing information about the user  
+## **Technology Stack**
+### **Frontend**
+- **React.js** - Component-based UI rendering
+- **React Router** - Client-side navigation
+- **WebSockets (`ws`)** - Real-time communication
+- **Bootstrap** - UI styling
 
-/messages  
-GET /messages - get the messages for a specific game  
-POST /messages - send a message to a chat in a game  
+### **Backend**
+- **Node.js with Express.js** - REST API and WebSocket server
+- **MongoDB with Mongoose** - Database for storing users, games, and chat messages
+- **Express WebSockets (`express-ws`)** - WebSocket handling for game state synchronization
+- **MSAL Node.js (`msal-node-wrapper`)** - Microsoft Azure AD authentication
 
-/games  
-GET /games - access the games  
-/game/:id (this should be done with websockets and we should ensure that only authenticated users can read/write to this endpoint)  
+### **Infrastructure**
+- **Render.com** - Hosting for both frontend and backend
+- **MongoDB Atlas** - Cloud-hosted database
+- **Dotenv** - Environment variable management
 
-/leaderboard  
-GET /leaderboard - retrieves the global leaderboard and shows user profiles with the highest elo  
-POST /matchmaking/find - find an opponent with the priority being similar elo.  
+---
 
-# Database Schemas
-**User**  
-user_id: ObjectId  
-username: String  
-password: String  
-elo: Number  
-createdAt: Date  
-updatedAt: Date  
+## **Endpoints and API Reference**
 
-**Game**  
-game_id: ObjectId  
-player1: ObjectId  
-player2: ObjectId  
-startTime: Date  
-endTime: Date  
-score: { player1: Number, player2: Number }  
-winner: ObjectId  
-chatRoomId: ObjectId  
-createdAt: Date  
-updatedAt: Date  
+### **User Authentication (`/user`)**
+| Method | Endpoint          | Description |
+|--------|------------------|-------------|
+| **GET** | `/user/login` | Authenticates a user via Azure AD |
+| **GET** | `/user/profile` | Retrieves user profile information (username, ELO, match history) |
+| **POST** | `/user/updateElo` | Updates the ELO ranking for a user after a match |
 
-**Message**  
-message_id: ObjectId  
-username: String  
-chatRoomId: ObjectId  
-message: String  
-timestamp: Date  
+### **Game Management (`/games`)**
+| Method | Endpoint          | Description |
+|--------|------------------|-------------|
+| **GET** | `/games/list` | Retrieves a list of all games played by the logged-in user |
+| **POST** | `/games` | Creates a new game entry after a match ends |
 
+### **Real-Time Chat (`/messages`)**
+| Method | Endpoint          | Description |
+|--------|------------------|-------------|
+| **GET** | `/messages` | Retrieves chat messages for a specific game |
+| **POST** | `/messages` | Sends a new message in an active game chat room |
+
+### **Leaderboard (`/leaderboard`)**
+| Method | Endpoint          | Description |
+|--------|------------------|-------------|
+| **GET** | `/leaderboard` | Fetches the list of users ranked by their ELO score |
+
+### **Matchmaking (`/matchmaking`)**
+| Method | Endpoint          | Description |
+|--------|------------------|-------------|
+| **POST** | `/matchmaking/find` | Finds an opponent with similar ELO using a priority queue |
+
+---
+
+## **Database Schemas**
+### **User Schema (`users` Collection)**
+```json
+{
+    "user_id": ObjectId,
+    "username": "String (Unique)",
+    "elo": Number,
+    "createdAt": "Date",
+    "updatedAt": "Date"
+}
