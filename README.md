@@ -1,4 +1,5 @@
 # Multiplayer Ping Pong
+**Name:** Rusheel Chande  
 **Web App URL:** [https://pong441.onrender.com/](https://pong441.onrender.com/)  
 **Class Project:** INFO 441 - Server-Side Development, Fall Quarter 2024  
 
