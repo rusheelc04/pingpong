@@ -127,7 +127,28 @@ The following schemas define the **MongoDB database structure**, storing **user 
     "timestamp": "Date"
 }
 ```
-`username`: Identifies **who sent the message**.
-`chatRoomId`: Links the message to a **specific game session**.
-`message`: The actual **chat text**.
-`timestamp`: The **time** the message was sent.
+- `username`: Identifies **who sent the message**.
+- `chatRoomId`: Links the message to a **specific game session**.
+- `message`: The actual **chat text**.
+- `timestamp`: The **time** the message was sent.
+
+## **Matchmaking and Game Logic**
+
+### **Matchmaking System**
+- Players are placed into a **priority queue** based on their **ELO ranking**.
+- The system first tries to **match a player with a similar ELO**.
+- If no close match is found, the **ELO threshold expands**.
+- Once a match is found, a **new game session is created**.
+
+### **Game State Synchronization**
+- **WebSockets (`/game`)** manage real-time player movement and ball updates.
+- The **game server is authoritative**, ensuring fair play and preventing cheating.
+- The **game loop runs at 120 FPS**, handling:
+  - **Ball physics and trajectory**
+  - **Paddle movement updates**
+  - **Scoring and win conditions**
+
+### **Chat System**
+- Each game session has a **unique chat room** (`chatRoomId`).
+- **WebSockets (`/chat`)** enable **real-time messaging**.
+- Messages are **persisted in MongoDB**, so players can review them later.
