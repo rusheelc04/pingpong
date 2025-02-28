@@ -13,11 +13,13 @@ It is built with a **React.js frontend, a Node.js/Express backend, and a MongoDB
 ---
 
 ## **Architecture**
+![architectural diagram](diagrams/architectural.png)
 The application follows a **client-server architecture** where the **frontend (React.js) communicates with the backend (Node.js/Express)** through **REST API requests and WebSockets**. The **backend manages authentication, matchmaking, and game state**, while the **MongoDB database stores user information, game history, and chat messages**.
 
 ---
 
 ## **Data Flow**
+![data flow diagram](diagrams/data_flow.png)
 When a user logs in via **Azure AD**, their **session is managed using Express sessions**. Once authenticated, they can **join the matchmaking queue**. When two players with similar **ELO rankings** are found, a **new game session is created**, and **WebSockets handle real-time game synchronization**. The **game server ensures fairness by maintaining the authoritative game state**, and **after the match**, the results are stored in **MongoDB**, updating the **ELO rankings** and **leaderboard**.
 
 ---
