@@ -96,3 +96,38 @@ The following schemas define the **MongoDB database structure**, storing **user 
 - `username`: The unique identifier for the user.
 - `elo`: The user's **ELO rating**, used for matchmaking.
 - `createdAt`, `updatedAt`: Track when the user was created or last updated.
+
+### **Game Schema (`games` Collection)**
+```json
+{
+    "game_id": "ObjectId",
+    "player1": "ObjectId", 
+    "player2": "ObjectId", 
+    "startTime": "Date",
+    "endTime": "Date",
+    "score": { "player1": "Number", "player2": "Number" },
+    "winner": "ObjectId",
+    "chatRoomId": "ObjectId",
+    "createdAt": "Date",
+    "updatedAt": "Date"
+}
+```
+- `player1`, `player2`: References to the two players.
+- `score`: Stores the **final score** of the game.
+- `winner`: Reference to the user who won.
+- `chatRoomId`: Stores **chat messages** for this game.
+
+### **Message Schema (`messages` Collection)**
+```json
+{
+    "message_id": "ObjectId",
+    "username": "ObjectId",
+    "chatRoomId": "ObjectId",
+    "message": "String",
+    "timestamp": "Date"
+}
+```
+`username`: Identifies **who sent the message**.
+`chatRoomId`: Links the message to a **specific game session**.
+`message`: The actual **chat text**.
+`timestamp`: The **time** the message was sent.
