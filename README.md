@@ -93,6 +93,6 @@ The following schemas define the **MongoDB database structure**, storing **user 
     "updatedAt": "Date"
 }
 ```
-- username: The unique identifier for the user.
-- elo: The user's **ELO rating**, used for matchmaking.
-- createdAt, updatedAt: Track when the user was created or last updated.
+- `username`: The unique identifier for the user.
+- `elo`: The user's **ELO rating**, used for matchmaking.
+- `createdAt`, `updatedAt`: Track when the user was created or last updated.
