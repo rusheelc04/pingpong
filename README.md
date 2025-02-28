@@ -1,5 +1,4 @@
 # Multiplayer Ping Pong
-**Group Members:** Munir Emam, Rusheel Chande, Dhruv Ashok, Alex Han  
 **Web App URL:** [https://pong441.onrender.com/](https://pong441.onrender.com/)  
 **Class Project:** INFO 441 - Server-Side Development, Fall Quarter 2024  
 
