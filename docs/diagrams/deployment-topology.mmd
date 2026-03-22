@@ -1,0 +1,18 @@
+flowchart TB
+  subgraph LocalDev["Local development"]
+    Browser["Browser"]
+    Vite["Vite dev server<br/>localhost:5173"]
+    Server["Express + Socket.IO<br/>localhost:3001"]
+    Mongo["MongoDB<br/>Docker or in-memory fallback"]
+    Browser --> Vite
+    Vite -->|"API proxy + WS proxy"| Server
+    Server --> Mongo
+  end
+
+  subgraph Production["Production build"]
+    User["User browser"]
+    App["Express server<br/>serves API + built frontend"]
+    Atlas["MongoDB"]
+    User --> App
+    App --> Atlas
+  end

@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant Browser
+  participant Web as React app
+  participant API as Express API
+  participant Sessions as Session store
+  participant Users as Users collection
+
+  Browser->>Web: Open landing page
+  Web->>API: POST /api/auth/guest
+  API->>Users: Create guest user
+  API->>Sessions: Regenerate and persist session
+  API-->>Web: Session user payload
+  Web->>API: GET /api/me
+  API->>Sessions: Read session by cookie
+  API-->>Web: User + activeMatchId
+  Web->>API: Socket handshake with same cookie
+  API-->>Web: Authenticated socket connection

@@ -1,23 +1,40 @@
 {
-  "name": "express-starter",
-  "version": "0.0.0",
+  "name": "ping-pong-arena",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "node ./bin/www.cjs"
+    "predev": "npm run mongo:up",
+    "dev": "npm run build -w @pingpong/shared && concurrently -k -n shared,server,web \"npm run dev -w @pingpong/shared\" \"npm run dev -w @pingpong/server\" \"npm run dev -w @pingpong/web\"",
+    "build": "npm run build -w @pingpong/shared && npm run build -w @pingpong/web && npm run build -w @pingpong/server",
+    "start": "npm run start -w @pingpong/server",
+    "clean": "rimraf apps/server/dist apps/web/dist packages/shared/dist coverage playwright-report apps/web/test-results",
+    "typecheck": "npm run build -w @pingpong/shared && npm run lint -w @pingpong/shared && npm run lint -w @pingpong/server && npm run lint -w @pingpong/web",
+    "lint:eslint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "npm run typecheck && npm run lint:eslint && npm run format:check",
+    "test": "npm run build -w @pingpong/shared && npm run test -w @pingpong/shared && npm run test -w @pingpong/server && npm run test -w @pingpong/web",
+    "e2e": "npm run e2e -w @pingpong/web",
+    "audit": "npm audit --omit=dev",
+    "check": "npm run lint && npm run test && npm run build && npm run audit",
+    "mongo:up": "docker compose up -d mongo",
+    "mongo:down": "docker compose down",
+    "mongo:logs": "docker compose logs -f mongo",
+    "mongo:reset": "docker compose down -v && docker compose up -d mongo"
   },
-  "dependencies": {
-    "cookie-parser": "^1.0.0",
-    "debug": "~2.6.9",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.0",
-    "express-session": "^1.18.1",
-    "express-ws": "^5.0.2",
-    "http": "^0.0.1-security",
-    "js-priority-queue": "^0.1.5",
-    "mongoose": "^8.8.2",
-    "morgan": "~1.9.1",
-    "msal-node-wrapper": "https://gitpkg.now.sh/kylethayer/ms-identity-javascript-nodejs-tutorial-msal-node-v2-/Common/msal-node-wrapper?main",
-    "ws": "^8.18.0"
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.23.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
+    "typescript-eslint": "^8.28.0"
   }
 }

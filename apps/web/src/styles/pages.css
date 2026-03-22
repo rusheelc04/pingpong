@@ -1,0 +1,53 @@
+/* Page-specific rules keep route-level visual choices out of shared component layers. */
+.landing-title {
+  max-width: 14ch;
+}
+
+.hero-highlight-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.play-primary-card {
+  min-height: 100%;
+  align-content: start;
+}
+
+.room-join-form {
+  align-items: stretch;
+}
+
+.history-panel {
+  align-content: start;
+}
+
+.stage-page-shell {
+  padding-top: 1.35rem;
+}
+
+.match-title {
+  font-size: clamp(2rem, 3.6vw, 3.6rem);
+  line-height: 1.02;
+}
+
+.result-stage-panel {
+  align-items: start;
+  max-width: 980px;
+}
+
+.result-stat-strip {
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .hero-highlight-strip {
+    grid-template-columns: 1fr;
+  }
+
+  input,
+  select {
+    width: 100%;
+    min-width: 0;
+  }
+}

@@ -1,0 +1,31 @@
+# Keep CI close to the local check command so the repo feels the same on a laptop and on GitHub.
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SESSION_SECRET: development-session-secret
+      CLIENT_URL: http://localhost:5173
+      PORT: 3001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run e2e
+      - run: npm run build
+      - run: npm run audit

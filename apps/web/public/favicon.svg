@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Ping Pong Arena icon">
+  <rect width="64" height="64" rx="14" fill="#050d1c" />
+  <rect x="10" y="14" width="7" height="36" rx="3.5" fill="#53d0ff" />
+  <rect x="47" y="14" width="7" height="36" rx="3.5" fill="#ff5fc4" />
+  <circle cx="32" cy="32" r="7" fill="#d5ff5f" />
+  <path d="M32 6v52" stroke="#53d0ff" stroke-opacity=".2" stroke-dasharray="4 4" />
+</svg>

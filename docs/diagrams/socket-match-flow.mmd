@@ -1,0 +1,25 @@
+sequenceDiagram
+  participant PlayerA as Player A browser
+  participant PlayerB as Player B browser
+  participant Server as Live match service
+  participant DB as MongoDB
+
+  PlayerA->>Server: queue:join / room:join
+  Server-->>PlayerA: queue:status
+  PlayerB->>Server: queue:join / room:join
+  Server->>DB: Persist match with status=live
+  Server-->>PlayerA: match:found + match:start
+  Server-->>PlayerB: match:found + match:start
+  loop Live play
+    PlayerA->>Server: input:move
+    PlayerB->>Server: input:move
+    Server->>Server: Advance paddles and ball
+    Server-->>PlayerA: state:snapshot
+    Server-->>PlayerB: state:snapshot
+  end
+  opt Disconnect
+    Server-->>PlayerA: match:reconnect-window
+  end
+  Server->>DB: Persist score, stats, replay, status=ended
+  Server-->>PlayerA: match:end
+  Server-->>PlayerB: match:end

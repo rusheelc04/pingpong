@@ -1,0 +1,20 @@
+# Local Mongo lives here so the app can boot with persistent data during normal development.
+services:
+  mongo:
+    image: mongo:7
+    container_name: ping-pong-arena-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo-data:

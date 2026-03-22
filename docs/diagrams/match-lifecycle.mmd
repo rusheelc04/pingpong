@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> Searching
+  [*] --> WaitingRoom
+  Searching --> Prestart: ranked opponent found
+  Searching --> Prestart: practice bot spawned
+  WaitingRoom --> Prestart: second player joins
+  Prestart --> Live: countdown completes
+  Live --> Prestart: point scored
+  Live --> Paused: player disconnects
+  Paused --> Live: player resumes in time
+  Paused --> Ended: reconnect window expires
+  Live --> Ended: win-by-two score reached
+  Ended --> [*]

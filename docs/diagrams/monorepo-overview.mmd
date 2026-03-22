@@ -1,0 +1,13 @@
+flowchart LR
+  Browser["Browser<br/>player"]
+  Web["apps/web<br/>React + Vite UI"]
+  Shared["packages/shared<br/>types, schemas, rating, physics"]
+  Server["apps/server<br/>Express + Socket.IO"]
+  Mongo["MongoDB<br/>users, sessions, matches, messages"]
+
+  Browser -->|"HTTP + WebSocket"| Web
+  Web -->|"REST requests"| Server
+  Web -->|"Socket.IO events"| Server
+  Shared --> Web
+  Shared --> Server
+  Server --> Mongo

@@ -1,0 +1,8 @@
+flowchart LR
+  Live["Live match loop"] --> Capture["Capture replay frame every 33 ms"]
+  Capture --> Finish["Finish match and calculate summary"]
+  Finish --> Persist["Persist score, stats, replayFrames, status=ended"]
+  Persist --> History["GET /api/matches<br/>completed summaries only"]
+  Persist --> Replay["GET /api/matches/:id/replay"]
+  Replay --> ReplayPage["ReplayPage scrubs frames locally"]
+  History --> Profile["Profile and match detail pages"]

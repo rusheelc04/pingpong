@@ -1,0 +1,24 @@
+/* Tokens hold the visual constants so color, spacing, and type changes stay deliberate instead of scattered. */
+@import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Oxanium:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: dark;
+  --bg: #050b1a;
+  --bg-deep: #081123;
+  --surface: rgba(11, 19, 38, 0.88);
+  --surface-alt: rgba(9, 16, 31, 0.9);
+  --surface-soft: rgba(255, 255, 255, 0.03);
+  --border: rgba(83, 208, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.08);
+  --cyan: #53d0ff;
+  --magenta: #ff5fc4;
+  --lime: #d5ff5f;
+  --text: #f6f7fb;
+  --muted: #9aa7c2;
+  --danger: #ff7d7d;
+  --success: #a8ff91;
+  --shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.34);
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+}

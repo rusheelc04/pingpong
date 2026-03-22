@@ -1,4 +1,14 @@
-*node_modules/
-*.vs/
-*.DS_Store
+node_modules/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+.vite/
+.eslintcache
 .env
+.env.local
+.DS_Store
+*.log
+*.tsbuildinfo
+*.vs/
