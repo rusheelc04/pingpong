@@ -8,6 +8,8 @@ import {
   type PublicPlayer
 } from "@pingpong/shared";
 
+import { PAUSES_PER_PLAYER } from "./constants.js";
+
 import type { LiveMatch, LivePlayer, SessionUserLike } from "./types.js";
 
 export function createLivePlayer(
@@ -75,6 +77,19 @@ export function serializeLiveState(match: LiveMatch): LiveMatchState {
       : match.players.right.disconnectDeadline
         ? new Date(match.players.right.disconnectDeadline).toISOString()
         : undefined,
+    pauseInfo: match.manualPause
+      ? {
+          pausedBy: match.manualPause.pausedBy,
+          pausedByName: match.manualPause.pausedByName,
+          resumesAt: new Date(match.manualPause.resumesAt).toISOString()
+        }
+      : undefined,
+    pausesLeft: !match.ranked
+      ? {
+          left: PAUSES_PER_PLAYER - (match.pausesUsed?.left ?? 0),
+          right: PAUSES_PER_PLAYER - (match.pausesUsed?.right ?? 0)
+        }
+      : undefined,
     serverTime: new Date().toISOString()
   };
 }

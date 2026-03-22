@@ -109,6 +109,12 @@ export interface RoomInfo {
   createdAt: string;
 }
 
+export interface PauseState {
+  pausedBy: string;
+  pausedByName: string;
+  resumesAt: string;
+}
+
 export interface LiveMatchState {
   matchId: string;
   mode: MatchMode;
@@ -127,6 +133,8 @@ export interface LiveMatchState {
   startsAt?: string;
   countdownPhase?: CountdownPhase;
   reconnectDeadline?: string;
+  pauseInfo?: PauseState;
+  pausesLeft?: { left: number; right: number };
   serverTime: string;
 }
 
@@ -239,6 +247,10 @@ export const chatSendSchema = z.object({
 });
 
 export const spectateJoinSchema = z.object({
+  matchId: z.string().trim().min(1)
+});
+
+export const pauseToggleSchema = z.object({
   matchId: z.string().trim().min(1)
 });
 

@@ -22,6 +22,8 @@ import { MessageModel } from "../models/Message.js";
 import { UserModel } from "../models/User.js";
 import {
   CHAT_COOLDOWN_MS,
+  MAX_PAUSE_MS,
+  PAUSES_PER_PLAYER,
   PRIVATE_ROOM_DISCONNECT_GRACE_MS,
   PRIVATE_ROOM_SWEEP_MS,
   PRIVATE_ROOM_TTL_MS,
@@ -332,6 +334,52 @@ export class LiveMatchService {
     return message;
   }
 
+  handlePauseToggle(socket: Socket, user: SessionUserLike, matchId: string) {
+    const match = this.liveMatches.get(matchId);
+    if (!match) {
+      throw new Error("Match not found.");
+    }
+
+    if (match.ranked) {
+      throw new Error("Cannot pause a ranked match.");
+    }
+
+    const player = [match.players.left, match.players.right].find(
+      (entry) => entry.userId === user.userId
+    );
+    if (!player) {
+      throw new Error("Only players can pause.");
+    }
+
+    // If already manually paused, treat as unpause
+    if (match.manualPause) {
+      match.manualPause = undefined;
+      match.status = match.resumeStatus ?? "live";
+      match.resumeStatus = undefined;
+      this.emitSnapshot(match, true);
+      return;
+    }
+
+    if (match.status !== "live" && match.status !== "prestart") {
+      throw new Error("Cannot pause in current state.");
+    }
+
+    const usedKey = player.side;
+    if ((match.pausesUsed[usedKey] ?? 0) >= PAUSES_PER_PLAYER) {
+      throw new Error("No pauses remaining.");
+    }
+
+    match.pausesUsed[usedKey] = (match.pausesUsed[usedKey] ?? 0) + 1;
+    match.resumeStatus = match.status === "prestart" ? "prestart" : "live";
+    match.status = "paused";
+    match.manualPause = {
+      pausedBy: user.userId,
+      pausedByName: user.displayName,
+      resumesAt: Date.now() + MAX_PAUSE_MS
+    };
+    this.emitSnapshot(match, true);
+  }
+
   async spectate(socket: Socket, matchId: string) {
     const match = this.liveMatches.get(matchId);
     if (!match) {
@@ -520,7 +568,8 @@ export class LiveMatchService {
         maxBallSpeed: 0,
         durationSeconds: 0,
         currentRally: 0
-      }
+      },
+      pausesUsed: { left: 0, right: 0 }
     };
 
     this.liveMatches.set(match.id, match);
@@ -551,6 +600,15 @@ export class LiveMatchService {
     }
 
     if (match.status === "paused") {
+      // Manual pause auto-resumes when the timer expires
+      if (match.manualPause && match.manualPause.resumesAt <= Date.now()) {
+        match.manualPause = undefined;
+        match.status = match.resumeStatus ?? "live";
+        match.resumeStatus = undefined;
+        this.emitSnapshot(match, true);
+        return;
+      }
+
       const disconnectedPlayer = [match.players.left, match.players.right].find(
         (player) =>
           player.disconnectDeadline && player.disconnectDeadline <= Date.now()
@@ -657,11 +715,28 @@ export class LiveMatchService {
 
   private advancePaddle(player: LivePlayer, match: LiveMatch) {
     if (player.isBot) {
-      player.targetY = clamp(
-        match.ball.y - GAME_CONSTANTS.paddleHeight / 2,
+      // Bot tracks the ball with a reaction delay and slight inaccuracy so it is beatable.
+      const reactionLag = 6; // frames of delay (~100ms at 60fps)
+      const inaccuracy = (Math.random() - 0.5) * 30;
+      const ballYDelayed =
+        match.ball.y + match.ball.vy * reactionLag + inaccuracy;
+      const botTarget = clamp(
+        ballYDelayed - GAME_CONSTANTS.paddleHeight / 2,
         0,
         GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight
       );
+      player.targetY = botTarget;
+
+      // Bot moves at 85% speed
+      const delta = player.targetY - player.paddleY;
+      const botSpeed = GAME_CONSTANTS.paddleSpeed * 0.85;
+      player.paddleY += clamp(delta, -botSpeed, botSpeed);
+      player.paddleY = clamp(
+        player.paddleY,
+        0,
+        GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight
+      );
+      return;
     }
 
     const delta = player.targetY - player.paddleY;

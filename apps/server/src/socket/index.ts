@@ -8,6 +8,7 @@ import { Server, type Socket } from "socket.io";
 import {
   chatSendSchema,
   inputMoveSchema,
+  pauseToggleSchema,
   type QueueStatusPayload,
   queueJoinSchema,
   resumeMatchSchema,
@@ -262,6 +263,28 @@ export function initializeSocket(
           ok: false,
           error:
             error instanceof Error ? error.message : "Could not send message."
+        });
+      }
+    });
+
+    socket.on("pause:toggle", (payload, callback) => {
+      if (isRateLimited(socket.id, "pause:toggle")) {
+        rejectAck(
+          callback as SocketAck,
+          "Too many requests. Slow down and try again."
+        );
+        return;
+      }
+
+      try {
+        const parsed = pauseToggleSchema.parse(payload);
+        liveMatchService.handlePauseToggle(socket, user, parsed.matchId);
+        callback?.({ ok: true });
+      } catch (error) {
+        callback?.({
+          ok: false,
+          error:
+            error instanceof Error ? error.message : "Could not toggle pause."
         });
       }
     });

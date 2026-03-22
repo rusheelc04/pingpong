@@ -40,6 +40,22 @@ function useCountdownValue(startsAt: string | undefined) {
   return Math.ceil(remainingMs / 1000);
 }
 
+function PauseCountdown({ resumesAt }: { resumesAt: string }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const remaining = Math.max(
+    0,
+    Math.ceil((new Date(resumesAt).getTime() - now) / 1000)
+  );
+
+  return <span className="pause-overlay-timer">Resuming in {remaining}s</span>;
+}
+
 function getReconnectCopy(reconnectDeadline: string) {
   return `Reconnect window ends at ${new Date(
     reconnectDeadline
@@ -204,11 +220,41 @@ export function MatchPage() {
                 >
                   {focusPlay ? "Exit Focus" : "Focus Play"}
                 </button>
+                {!liveState.ranked &&
+                  playerRole !== "spectator" &&
+                  (liveState.pausesLeft?.[playerRole] ?? 0) > 0 && (
+                    <button
+                      className="ghost-button pause-button"
+                      onClick={() => socket?.emit("pause:toggle", { matchId })}
+                      type="button"
+                    >
+                      {liveState.status === "paused" && liveState.pauseInfo
+                        ? "Resume"
+                        : `Pause (${liveState.pausesLeft?.[playerRole] ?? 0})`}
+                    </button>
+                  )}
               </div>
             </div>
 
             <div className="match-stage-frame">
               <CountdownOverlay label={countdownLabel} value={countdownValue} />
+              {liveState.pauseInfo ? (
+                <div className="pause-overlay">
+                  <span className="pause-overlay-label">
+                    Paused by {liveState.pauseInfo.pausedByName}
+                  </span>
+                  <PauseCountdown resumesAt={liveState.pauseInfo.resumesAt} />
+                  {playerRole !== "spectator" && (
+                    <button
+                      className="ghost-button"
+                      onClick={() => socket?.emit("pause:toggle", { matchId })}
+                      type="button"
+                    >
+                      Resume
+                    </button>
+                  )}
+                </div>
+              ) : null}
               {scoreFlashVisible ? <div className="score-flash" /> : null}
               <PongBoard
                 controlledSide={playerRole === "spectator" ? null : playerRole}

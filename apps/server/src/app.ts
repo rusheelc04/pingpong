@@ -32,7 +32,7 @@ function allowRequestOrigin(
     return;
   }
 
-  callback(new Error(`Origin ${origin} is not allowed in development.`));
+  callback(new Error(`Origin ${origin} is not allowed.`));
 }
 
 export async function createApp(liveMatchService: LiveMatchService) {

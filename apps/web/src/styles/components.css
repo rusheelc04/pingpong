@@ -471,6 +471,36 @@ select:focus-visible {
   }
 }
 
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: rgba(5, 11, 26, 0.82);
+  border-radius: var(--radius-lg);
+}
+
+.pause-overlay-label {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--cyan);
+}
+
+.pause-overlay-timer {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.pause-button {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
 @media (max-width: 960px) {
   .leaderboard-row,
   .leaderboard-header-row,

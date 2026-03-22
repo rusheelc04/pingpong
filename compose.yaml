@@ -1,5 +1,21 @@
-# Local Mongo lives here so the app can boot with persistent data during normal development.
+# Full stack: app server + MongoDB. Use `docker compose up --build` to start everything.
 services:
+  app:
+    build: .
+    container_name: ping-pong-arena-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/ping-pong-arena
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:3001}
+      NODE_ENV: production
+      PORT: "3001"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
   mongo:
     image: mongo:7
     container_name: ping-pong-arena-mongo

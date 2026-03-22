@@ -50,6 +50,12 @@ export interface LiveMatch {
     currentRally: number;
   };
   interval?: NodeJS.Timeout;
+  manualPause?: {
+    pausedBy: string;
+    pausedByName: string;
+    resumesAt: number;
+  };
+  pausesUsed: { left: number; right: number };
 }
 
 export interface RoomLobby {
