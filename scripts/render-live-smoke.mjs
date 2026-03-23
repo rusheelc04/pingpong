@@ -85,6 +85,55 @@ function emitWithAck(socket, event, payload, timeoutMs = 10_000) {
   });
 }
 
+async function waitForSocketConnect(socket, timeoutMs = 20_000) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Socket connection timed out."));
+    }, timeoutMs);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off("connect", handleConnect);
+      socket.off("connect_error", handleConnectError);
+    };
+
+    const handleConnect = () => {
+      cleanup();
+      resolve();
+    };
+
+    const handleConnectError = (error) => {
+      cleanup();
+      reject(error);
+    };
+
+    socket.once("connect", handleConnect);
+    socket.once("connect_error", handleConnectError);
+  });
+}
+
+async function withRetries(label, attempts, action) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await action(attempt);
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < attempts) {
+        console.warn(
+          `${label} attempt ${attempt} failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+  }
+
+  throw lastError ?? new Error(`${label} failed.`);
+}
+
 const displayName = `RenderSmoke${Date.now()}`;
 const loginResponse = await request({
   method: "POST",
@@ -113,38 +162,39 @@ if (meResponse.statusCode !== 200) {
   throw new Error(`/api/me failed with status ${meResponse.statusCode}.`);
 }
 
-const socket = createClient(origin.origin, {
-  transports: ["websocket"],
-  extraHeaders: {
-    Cookie: cookie,
-    Origin: origin.origin
+const socket = await withRetries("Socket connect", 3, async () => {
+  const candidate = createClient(origin.origin, {
+    transports: ["websocket"],
+    extraHeaders: {
+      Cookie: cookie,
+      Origin: origin.origin
+    }
+  });
+
+  try {
+    await waitForSocketConnect(candidate);
+    return candidate;
+  } catch (error) {
+    candidate.disconnect();
+    throw error;
   }
-});
-
-await new Promise((resolve, reject) => {
-  const timeout = setTimeout(() => {
-    reject(new Error("Socket connection timed out."));
-  }, 10_000);
-
-  socket.once("connect", () => {
-    clearTimeout(timeout);
-    resolve();
-  });
-
-  socket.once("connect_error", (error) => {
-    clearTimeout(timeout);
-    reject(error);
-  });
 });
 
 try {
-  const joinResult = await emitWithAck(socket, "queue:join", {
-    mode: "practice"
-  });
+  const joinResult = await withRetries("queue:join", 3, async () => {
+    const result = await emitWithAck(
+      socket,
+      "queue:join",
+      { mode: "practice" },
+      15_000
+    );
 
-  if (!joinResult?.ok || !joinResult?.status?.matchId) {
-    throw new Error(`Live practice join failed: ${JSON.stringify(joinResult)}`);
-  }
+    if (!result?.ok || !result?.status?.matchId) {
+      throw new Error(`Live practice join failed: ${JSON.stringify(result)}`);
+    }
+
+    return result;
+  });
 
   const detailResponse = await request({
     method: "GET",
