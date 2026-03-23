@@ -44,6 +44,13 @@
   padding: 1.25rem;
 }
 
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .feature-card {
   background: var(--surface-alt);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -67,6 +74,25 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
+}
+
+.field-stack {
+  display: grid;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: min(280px, 100%);
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.field-stack input,
+.field-stack select {
+  width: 100%;
 }
 
 .primary-button,
@@ -125,6 +151,30 @@ select:focus-visible {
 .panel {
   display: grid;
   gap: 1rem;
+}
+
+.state-panel {
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.state-panel.is-danger {
+  border-color: rgba(255, 125, 125, 0.24);
+  background:
+    linear-gradient(180deg, rgba(11, 19, 38, 0.96), rgba(18, 11, 18, 0.94)),
+    rgba(11, 19, 38, 0.88);
+}
+
+.state-panel-copy {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.state-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .panel.queue-banner,

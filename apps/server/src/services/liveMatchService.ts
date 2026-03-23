@@ -1,18 +1,14 @@
 // This service coordinates queueing, simulation, reconnects, and persistence without leaking game rules into the route layer.
-import mongoose from "mongoose";
 import { nanoid } from "nanoid";
 import type { Server, Socket } from "socket.io";
 
 import {
   type ChatMessage,
-  type MatchFinalizationErrorPayload,
   type MatchEndedBy,
   type MatchMode,
-  type MatchSummary,
   type PlayerSide,
   type QueueStatusPayload,
   GAME_CONSTANTS,
-  calculateRatingDelta,
   clamp,
   createServe,
   sanitizeText,
@@ -20,22 +16,17 @@ import {
   stepBall
 } from "@pingpong/shared";
 
-import { isProduction } from "../config.js";
-import { canUseTransactions } from "../db.js";
 import { logger } from "../logger.js";
-import { MatchModel } from "../models/Match.js";
 import { MessageModel } from "../models/Message.js";
-import { UserModel } from "../models/User.js";
 import {
-  advanceBotMotion,
-  getBotNextTargetY,
-  getBotReactionMs,
-  getBotReadyY
-} from "./live-match/bot.js";
+  buildFinalizationErrorPayload,
+  buildIntendedResultSnapshot,
+  persistMatchFinalizationWithRetry,
+  prepareMatchFinalization,
+  type MatchFinalizationContext
+} from "./live-match/finalization.js";
 import {
   CHAT_COOLDOWN_MS,
-  MATCH_FINALIZATION_ATTEMPTS,
-  MATCH_FINALIZATION_RETRY_MS,
   MAX_PAUSE_MS,
   PAUSES_PER_PLAYER,
   PRIVATE_ROOM_DISCONNECT_GRACE_MS,
@@ -51,11 +42,13 @@ import {
   serializeQueueStatus
 } from "./live-match/queue.js";
 import { createPrivateRoom, prunePrivateRooms } from "./live-match/rooms.js";
+import { serializeLiveState } from "./live-match/serialization.js";
 import {
-  createLivePlayer,
-  serializeLiveState,
-  serializeMatchSummary
-} from "./live-match/serialization.js";
+  advanceLivePaddle,
+  captureReplayFrameIfDue,
+  createPersistedLiveMatch,
+  enterMatchPrestart
+} from "./live-match/runtime.js";
 import type {
   LiveMatch,
   LivePlayer,
@@ -70,28 +63,6 @@ export const LIVE_MATCH_ERRORS = {
   maintenanceOrDraining: "maintenance-or-draining",
   finalizationFailed: "match-finalization-failed"
 } as const;
-
-interface FinalizedPlayerSnapshot {
-  side: PlayerSide;
-  userId: string;
-  displayName: string;
-  ratingBefore: number;
-  ratingAfter: number;
-  avatarUrl?: string | null;
-  isBot?: boolean;
-}
-
-interface MatchFinalizationContext {
-  endedAt: Date;
-  endedBy: MatchEndedBy;
-  loser: LivePlayer;
-  match: LiveMatch;
-  persistedPlayers: [FinalizedPlayerSnapshot, FinalizedPlayerSnapshot];
-  rankedHumanMatch: boolean;
-  ratingDelta: number;
-  summary: MatchSummary;
-  winner: LivePlayer;
-}
 
 export class LiveMatchService {
   private io?: Server;
@@ -599,66 +570,7 @@ export class LiveMatchService {
       isBot?: boolean;
     };
   }) {
-    const startedAt = new Date();
-    const doc = await MatchModel.create({
-      mode: options.mode,
-      ranked: options.ranked,
-      status: "live",
-      roomCode: options.roomCode ?? null,
-      startedAt,
-      endedBy: "score",
-      players: [
-        {
-          side: "left",
-          userId: options.left.userId,
-          displayName: options.left.displayName,
-          ratingBefore: options.left.rating,
-          ratingAfter: options.left.rating,
-          avatarUrl: options.left.avatarUrl ?? null,
-          isBot: options.left.isBot ?? false
-        },
-        {
-          side: "right",
-          userId: options.right.userId,
-          displayName: options.right.displayName,
-          ratingBefore: options.right.rating,
-          ratingAfter: options.right.rating,
-          avatarUrl: options.right.avatarUrl ?? null,
-          isBot: options.right.isBot ?? false
-        }
-      ],
-      replayFrames: []
-    });
-
-    const match: LiveMatch = {
-      id: doc._id.toString(),
-      mode: options.mode,
-      ranked: options.ranked,
-      roomCode: options.roomCode,
-      players: {
-        left: createLivePlayer(options.left),
-        right: createLivePlayer(options.right)
-      },
-      score: { left: 0, right: 0 },
-      ball: createServe(),
-      status: "prestart",
-      resumeStatus: undefined,
-      startedAt: startedAt.getTime(),
-      startsAt: startedAt.getTime() + GAME_CONSTANTS.matchIntroMs,
-      countdownPhase: "opening-serve",
-      lastReplayCaptureAt: 0,
-      replayFrames: [],
-      snapshotTick: 0,
-      stats: {
-        rallyCount: 0,
-        longestRally: 0,
-        paddleHits: 0,
-        maxBallSpeed: 0,
-        durationSeconds: 0,
-        currentRally: 0
-      },
-      pausesUsed: { left: 0, right: 0 }
-    };
+    const match = await createPersistedLiveMatch(options);
 
     this.liveMatches.set(match.id, match);
     this.userToMatch.set(match.players.left.userId, match.id);
@@ -723,8 +635,8 @@ export class LiveMatchService {
       return;
     }
 
-    this.advancePaddle(match.players.left, match);
-    this.advancePaddle(match.players.right, match);
+    advanceLivePaddle(match.players.left, match);
+    advanceLivePaddle(match.players.right, match);
 
     const step = stepBall({
       ball: match.ball,
@@ -765,94 +677,16 @@ export class LiveMatchService {
     }
 
     if (step.scoredOn) {
-      this.enterPrestart(match, "point-reset", GAME_CONSTANTS.scorePauseMs);
+      enterMatchPrestart(match, "point-reset", GAME_CONSTANTS.scorePauseMs);
+      this.emitSnapshot(match);
     }
 
-    if (
-      Date.now() - match.lastReplayCaptureAt >=
-      GAME_CONSTANTS.replayCaptureMs
-    ) {
-      match.lastReplayCaptureAt = Date.now();
-      match.replayFrames.push({
-        t: Date.now() - match.startedAt,
-        ball: { x: match.ball.x, y: match.ball.y },
-        paddles: {
-          left: match.players.left.paddleY,
-          right: match.players.right.paddleY
-        },
-        score: { ...match.score }
-      });
-    }
+    captureReplayFrameIfDue(match);
 
     match.snapshotTick += 1;
     if (match.snapshotTick % SNAPSHOT_EVERY_TICKS === 0) {
       this.emitSnapshot(match);
     }
-  }
-
-  private enterPrestart(
-    match: LiveMatch,
-    countdownPhase: "opening-serve" | "point-reset",
-    durationMs: number
-  ) {
-    for (const player of [match.players.left, match.players.right]) {
-      if (!player.isBot) {
-        continue;
-      }
-
-      const readyY = getBotReadyY();
-      player.botAimOffsetY = 0;
-      player.botRetargetAt = undefined;
-      player.botTargetY = readyY;
-      player.botVelocityY = 0;
-      player.paddleY = readyY;
-      player.targetY = readyY;
-    }
-
-    match.status = "prestart";
-    match.startsAt = Date.now() + durationMs;
-    match.countdownPhase = countdownPhase;
-    this.emitSnapshot(match);
-  }
-
-  private advancePaddle(player: LivePlayer, match: LiveMatch) {
-    if (player.isBot) {
-      const now = Date.now();
-
-      if (
-        typeof player.botRetargetAt !== "number" ||
-        player.botRetargetAt <= now
-      ) {
-        const nextTarget = getBotNextTargetY(match.ball, player.side);
-        player.botAimOffsetY = nextTarget.aimOffsetY;
-        player.botRetargetAt = now + getBotReactionMs();
-        player.botTargetY = nextTarget.targetY;
-      }
-
-      const targetY = player.botTargetY ?? getBotReadyY();
-      const nextMotion = advanceBotMotion({
-        paddleY: player.paddleY,
-        targetY,
-        velocityY: player.botVelocityY ?? 0
-      });
-
-      player.targetY = targetY;
-      player.botVelocityY = nextMotion.velocityY;
-      player.paddleY = nextMotion.paddleY;
-      return;
-    }
-
-    const delta = player.targetY - player.paddleY;
-    player.paddleY += clamp(
-      delta,
-      -GAME_CONSTANTS.paddleSpeed,
-      GAME_CONSTANTS.paddleSpeed
-    );
-    player.paddleY = clamp(
-      player.paddleY,
-      0,
-      GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight
-    );
   }
 
   private async finishMatch(
@@ -875,7 +709,16 @@ export class LiveMatchService {
     const context = this.prepareMatchFinalization(match, winnerSide, endedBy);
 
     try {
-      await this.persistMatchFinalizationWithRetry(context);
+      const finalizationResult = await persistMatchFinalizationWithRetry(
+        context,
+        {
+          finalizationErrorCode: LIVE_MATCH_ERRORS.finalizationFailed,
+          warnedAboutSequentialFallback:
+            this.warnedAboutSequentialFinalizationFallback
+        }
+      );
+      this.warnedAboutSequentialFinalizationFallback =
+        finalizationResult.warnedAboutSequentialFallback;
       this.io?.to(match.id).emit("match:end", {
         summary: context.summary,
         ratingDelta: context.ratingDelta
@@ -892,178 +735,7 @@ export class LiveMatchService {
     winnerSide: PlayerSide,
     endedBy: MatchEndedBy
   ): MatchFinalizationContext {
-    const winner = match.players[winnerSide];
-    const loser = match.players[winnerSide === "left" ? "right" : "left"];
-    const rankedHumanMatch = match.ranked && !winner.isBot && !loser.isBot;
-    const ratingDelta = rankedHumanMatch
-      ? calculateRatingDelta(winner.ratingBefore, loser.ratingBefore)
-      : 0;
-
-    winner.ratingAfter = winner.ratingBefore + ratingDelta;
-    loser.ratingAfter = loser.ratingBefore - ratingDelta;
-
-    const endedAt = new Date();
-    match.stats.durationSeconds = Math.round(
-      (endedAt.getTime() - match.startedAt) / 1000
-    );
-
-    const persistedPlayers: [FinalizedPlayerSnapshot, FinalizedPlayerSnapshot] =
-      [
-        {
-          side: "left",
-          userId: match.players.left.userId,
-          displayName: match.players.left.displayName,
-          ratingBefore: match.players.left.ratingBefore,
-          ratingAfter: match.players.left.ratingAfter,
-          avatarUrl: match.players.left.avatarUrl ?? null,
-          isBot: match.players.left.isBot ?? false
-        },
-        {
-          side: "right",
-          userId: match.players.right.userId,
-          displayName: match.players.right.displayName,
-          ratingBefore: match.players.right.ratingBefore,
-          ratingAfter: match.players.right.ratingAfter,
-          avatarUrl: match.players.right.avatarUrl ?? null,
-          isBot: match.players.right.isBot ?? false
-        }
-      ];
-
-    return {
-      endedAt,
-      endedBy,
-      loser,
-      match,
-      persistedPlayers,
-      rankedHumanMatch,
-      ratingDelta,
-      summary: serializeMatchSummary(match, winnerSide, endedBy),
-      winner
-    };
-  }
-
-  private async persistMatchFinalizationWithRetry(
-    context: MatchFinalizationContext
-  ) {
-    let lastError: unknown = null;
-
-    for (
-      let attempt = 1;
-      attempt <= MATCH_FINALIZATION_ATTEMPTS;
-      attempt += 1
-    ) {
-      try {
-        await this.persistMatchFinalization(context);
-        return;
-      } catch (error) {
-        lastError = error;
-        logger.warn(
-          {
-            attempt,
-            err: error,
-            matchId: context.match.id
-          },
-          "Failed to persist match finalization."
-        );
-
-        if (attempt < MATCH_FINALIZATION_ATTEMPTS) {
-          await new Promise<void>((resolve) => {
-            setTimeout(resolve, MATCH_FINALIZATION_RETRY_MS);
-          });
-        }
-      }
-    }
-
-    throw lastError;
-  }
-
-  private async persistMatchFinalization(context: MatchFinalizationContext) {
-    if (canUseTransactions()) {
-      await mongoose.connection.transaction(async (session) => {
-        await this.applyMatchFinalizationWrites(context, session);
-      });
-      return;
-    }
-
-    if (!isProduction) {
-      if (!this.warnedAboutSequentialFinalizationFallback) {
-        logger.warn(
-          "MongoDB transactions are unavailable. Falling back to sequential match finalization writes outside production."
-        );
-        this.warnedAboutSequentialFinalizationFallback = true;
-      }
-
-      await this.applyMatchFinalizationWrites(context);
-      return;
-    }
-
-    throw new Error(LIVE_MATCH_ERRORS.finalizationFailed);
-  }
-
-  private async applyMatchFinalizationWrites(
-    context: MatchFinalizationContext,
-    session?: mongoose.mongo.ClientSession
-  ) {
-    const sessionOptions = session ? { session } : undefined;
-
-    if (context.rankedHumanMatch) {
-      await UserModel.updateOne(
-        { _id: context.winner.userId },
-        {
-          $set: { rating: context.winner.ratingAfter },
-          $inc: { wins: 1, matchesPlayed: 1 }
-        },
-        sessionOptions
-      );
-      await UserModel.updateOne(
-        { _id: context.loser.userId },
-        {
-          $set: { rating: context.loser.ratingAfter },
-          $inc: { losses: 1, matchesPlayed: 1 }
-        },
-        sessionOptions
-      );
-    } else {
-      if (!context.winner.isBot) {
-        await UserModel.updateOne(
-          { _id: context.winner.userId },
-          { $inc: { wins: 1, matchesPlayed: 1 } },
-          sessionOptions
-        );
-      }
-
-      if (!context.loser.isBot) {
-        await UserModel.updateOne(
-          { _id: context.loser.userId },
-          { $inc: { losses: 1, matchesPlayed: 1 } },
-          sessionOptions
-        );
-      }
-    }
-
-    await MatchModel.findByIdAndUpdate(
-      context.match.id,
-      {
-        $set: {
-          status: "ended",
-          score: context.match.score,
-          winnerId: context.winner.userId,
-          winnerName: context.winner.displayName,
-          endedBy: context.endedBy,
-          endedAt: context.endedAt,
-          stats: {
-            rallyCount: context.match.stats.rallyCount,
-            longestRally: context.match.stats.longestRally,
-            paddleHits: context.match.stats.paddleHits,
-            maxBallSpeed: context.match.stats.maxBallSpeed,
-            durationSeconds: context.match.stats.durationSeconds
-          },
-          replayFrames: context.match.replayFrames,
-          players: context.persistedPlayers
-        }
-      },
-      sessionOptions
-    );
+    return prepareMatchFinalization(match, winnerSide, endedBy);
   }
 
   private handleMatchFinalizationFailure(
@@ -1073,30 +745,15 @@ export class LiveMatchService {
     logger.error(
       {
         err: error,
-        intendedResult: {
-          endedAt: context.endedAt.toISOString(),
-          endedBy: context.endedBy,
-          matchId: context.match.id,
-          players: context.persistedPlayers,
-          ratingDelta: context.ratingDelta,
-          score: context.match.score,
-          stats: {
-            rallyCount: context.match.stats.rallyCount,
-            longestRally: context.match.stats.longestRally,
-            paddleHits: context.match.stats.paddleHits,
-            maxBallSpeed: context.match.stats.maxBallSpeed,
-            durationSeconds: context.match.stats.durationSeconds
-          },
-          winnerId: context.winner.userId
-        }
+        intendedResult: buildIntendedResultSnapshot(context)
       },
       "Could not safely persist the finished match."
     );
 
-    const payload: MatchFinalizationErrorPayload = {
-      matchId: context.match.id,
-      error: LIVE_MATCH_ERRORS.finalizationFailed
-    };
+    const payload = buildFinalizationErrorPayload(
+      context.match.id,
+      LIVE_MATCH_ERRORS.finalizationFailed
+    );
 
     this.io?.to(context.match.id).emit("match:finalization-error", payload);
     this.releaseMatchOwnership(context.match);

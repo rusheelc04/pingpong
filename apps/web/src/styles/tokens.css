@@ -3,6 +3,8 @@
 
 :root {
   color-scheme: dark;
+  --font-heading: "Oxanium", sans-serif;
+  --font-body: "Chakra Petch", sans-serif;
   --bg: #050b1a;
   --bg-deep: #081123;
   --surface: rgba(11, 19, 38, 0.88);
@@ -15,6 +17,7 @@
   --lime: #d5ff5f;
   --text: #f6f7fb;
   --muted: #9aa7c2;
+  --text-muted: #9aa7c2;
   --danger: #ff7d7d;
   --success: #a8ff91;
   --shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.34);

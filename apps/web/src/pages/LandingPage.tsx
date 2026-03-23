@@ -50,12 +50,16 @@ export function LandingPage() {
                 }
               }}
             >
-              <input
-                maxLength={24}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="Choose a display name"
-                value={displayName}
-              />
+              <label className="field-stack" htmlFor="guest-display-name">
+                <span className="field-label">Choose a display name</span>
+                <input
+                  id="guest-display-name"
+                  maxLength={24}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  placeholder="Choose a display name"
+                  value={displayName}
+                />
+              </label>
               <button
                 className="primary-button"
                 disabled={!displayName.trim() || submitting}

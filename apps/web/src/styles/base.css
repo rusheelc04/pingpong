@@ -12,7 +12,7 @@ body,
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Chakra Petch", sans-serif;
+  font-family: var(--font-body);
   background:
     radial-gradient(circle at top, rgba(83, 208, 255, 0.16), transparent 30%),
     radial-gradient(
@@ -43,7 +43,7 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-family: "Oxanium", sans-serif;
+  font-family: var(--font-heading);
 }
 
 h1 {

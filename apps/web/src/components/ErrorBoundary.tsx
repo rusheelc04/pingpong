@@ -1,6 +1,8 @@
 // This catches render-time crashes so a bad component does not blank the whole app.
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { StatusPanel } from "./StatusPanel";
+
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
@@ -30,13 +32,13 @@ export class ErrorBoundary extends Component<
     if (this.state.hasError) {
       return (
         <main className="page-shell page-stack">
-          <section className="panel">
-            <span className="eyebrow">Something broke</span>
-            <h1>The arena hit an unexpected error.</h1>
-            <p className="lead-copy">
-              Refresh the page to reset the current session state.
-            </p>
-          </section>
+          <StatusPanel
+            eyebrow="Something broke"
+            headingLevel="h1"
+            message="Refresh the page to reset the current session state."
+            title="The arena hit an unexpected error."
+            tone="danger"
+          />
         </main>
       );
     }

@@ -237,12 +237,16 @@ export function PlayPage() {
                 navigate(`/rooms/${joinCode.trim().toUpperCase()}`);
               }}
             >
-              <input
-                maxLength={12}
-                onChange={(event) => setJoinCode(event.target.value)}
-                placeholder="Enter room code"
-                value={joinCode}
-              />
+              <label className="field-stack" htmlFor="room-join-code">
+                <span className="field-label">Enter room code</span>
+                <input
+                  id="room-join-code"
+                  maxLength={12}
+                  onChange={(event) => setJoinCode(event.target.value)}
+                  placeholder="Enter room code"
+                  value={joinCode}
+                />
+              </label>
               <button
                 className="ghost-button"
                 disabled={!joinCode.trim()}

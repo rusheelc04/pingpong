@@ -6,6 +6,32 @@ const port = Number(process.env.SMOKE_PORT ?? 3101);
 const origin = `http://127.0.0.1:${port}`;
 const mongoUri =
   process.env.MONGO_URI ?? "mongodb://127.0.0.1:27017/ping-pong-arena";
+const verboseLogs = process.env.SMOKE_VERBOSE === "1";
+const bufferedLogs = [];
+
+function rememberLog(source, chunk) {
+  const line = chunk.toString("utf8");
+
+  if (verboseLogs) {
+    const destination = source === "stderr" ? process.stderr : process.stdout;
+    destination.write(line);
+  } else {
+    bufferedLogs.push(line);
+
+    if (bufferedLogs.length > 80) {
+      bufferedLogs.shift();
+    }
+  }
+}
+
+function printBufferedLogs() {
+  if (bufferedLogs.length === 0) {
+    return;
+  }
+
+  console.error("Captured server logs:");
+  console.error(bufferedLogs.join(""));
+}
 
 async function waitForHealthy(url, timeoutMs = 30_000) {
   const startedAt = Date.now();
@@ -40,12 +66,8 @@ const server = spawn(process.execPath, ["apps/server/dist/index.js"], {
   stdio: ["ignore", "pipe", "pipe"]
 });
 
-server.stdout.on("data", (chunk) => {
-  process.stdout.write(chunk);
-});
-server.stderr.on("data", (chunk) => {
-  process.stderr.write(chunk);
-});
+server.stdout.on("data", (chunk) => rememberLog("stdout", chunk));
+server.stderr.on("data", (chunk) => rememberLog("stderr", chunk));
 
 try {
   await waitForHealthy(`${origin}/api/healthz`);
@@ -64,6 +86,9 @@ try {
 } catch (error) {
   const help = `Production smoke failed. Ensure the project is built and MongoDB is reachable at ${mongoUri}.`;
   console.error(help);
+  if (!verboseLogs) {
+    printBufferedLogs();
+  }
   throw error;
 } finally {
   server.kill("SIGTERM");

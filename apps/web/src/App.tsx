@@ -2,6 +2,7 @@ import { Suspense, lazy, type ReactElement } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { NavBar } from "./components/NavBar";
+import { StatusPanel } from "./components/StatusPanel";
 import { useAppContext } from "./lib/app-context";
 
 const LandingPage = lazy(() =>
@@ -48,13 +49,31 @@ const RoomPage = lazy(() =>
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const { user, loading } = useAppContext();
   if (loading) {
-    return <div className="page-shell">Loading Arena...</div>;
+    return (
+      <main className="page-shell page-stack">
+        <StatusPanel
+          eyebrow="Loading"
+          headingLevel="h2"
+          message="Restoring your session and routing you back into the arena."
+          title="Loading Arena..."
+        />
+      </main>
+    );
   }
   return user ? children : <Navigate to="/" replace />;
 }
 
 function RouteFallback() {
-  return <div className="page-shell">Loading Arena...</div>;
+  return (
+    <main className="page-shell page-stack">
+      <StatusPanel
+        eyebrow="Loading"
+        headingLevel="h2"
+        message="Pulling in the next route and any session data it needs."
+        title="Loading Arena..."
+      />
+    </main>
+  );
 }
 
 export default function App() {

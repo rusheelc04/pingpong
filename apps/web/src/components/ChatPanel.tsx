@@ -131,12 +131,16 @@ export function ChatPanel({
           );
         }}
       >
-        <input
-          maxLength={240}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Say something sportsmanlike..."
-          value={draft}
-        />
+        <label className="field-stack" htmlFor={`chat-draft-${matchId}`}>
+          <span className="field-label">Say something sportsmanlike</span>
+          <input
+            id={`chat-draft-${matchId}`}
+            maxLength={240}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="Say something sportsmanlike..."
+            value={draft}
+          />
+        </label>
         <button
           className="primary-button"
           disabled={!draft.trim() || sending}

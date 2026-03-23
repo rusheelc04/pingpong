@@ -1,10 +1,17 @@
 # Ping Pong Arena
 
-https://ping-pong-arena.onrender.com/
-
-![Live match view](docs/assets/screenshots/live-match.png)
+[Live Demo](https://ping-pong-arena.onrender.com/)
 
 Ping Pong Arena is an online ping pong game with ranked matches, private rooms, practice mode, in-match chat, reconnect handling, match history, and replay viewing.
+
+## Quick Snapshot
+
+- Real-time full-stack TypeScript monorepo with React, Express, Socket.IO, and MongoDB
+- Playable modes include ranked queue, private rooms, and practice matches against the Arcade Bot
+- Validation stays close to shipping: `npm run check`, Playwright browser coverage, and a compiled production smoke test
+- Deployment is intentionally single-instance in v1 because live queue, room, and match state are held in process memory
+
+![Live match view](docs/assets/screenshots/live-match.png)
 
 ## Highlights
 
@@ -214,7 +221,7 @@ Coverage includes shared helpers, server match flows, web page rendering, and br
 
 ## Deployment Notes
 
-The production setup is straightforward, but v1 has an important constraint:
+The production setup is straightforward, but v1 intentionally stays on a single Render instance:
 
 - keep Render on a single app instance because live queue, room, and match state are held in process memory
 - deploy during a quiet window because restarts can interrupt active matches

@@ -6,6 +6,7 @@ import type { LiveMatchState, PlayerSide } from "@pingpong/shared";
 import { ChatPanel } from "../components/ChatPanel";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { PongBoard } from "../components/PongBoard";
+import { StatusPanel } from "../components/StatusPanel";
 import { useAppContext } from "../lib/app-context";
 import {
   COUNTDOWN_GO_EXIT_MS,
@@ -256,7 +257,12 @@ export function MatchPage() {
   if (loading && !summary && !liveState) {
     return (
       <main className="page-shell page-stack">
-        <section className="panel">Loading match...</section>
+        <StatusPanel
+          eyebrow="Loading"
+          headingLevel="h2"
+          message="Pulling the latest live state, chat history, and summary data."
+          title="Loading match..."
+        />
       </main>
     );
   }
@@ -474,12 +480,21 @@ export function MatchPage() {
           </div>
         </section>
       ) : (
-        <section className="panel">
-          <h3>Match unavailable</h3>
-          <p className="muted-copy">
-            This match could not be loaded or is no longer available.
-          </p>
-        </section>
+        <StatusPanel
+          actions={
+            <Link className="primary-button" to="/play">
+              Back to Arena Hub
+            </Link>
+          }
+          eyebrow="Unavailable"
+          headingLevel="h2"
+          message={
+            error ??
+            "This match could not be loaded, may have expired, or no longer belongs to this player."
+          }
+          title="This match is no longer available."
+          tone="danger"
+        />
       )}
     </main>
   );
