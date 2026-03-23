@@ -27,6 +27,12 @@ import { MatchModel } from "../models/Match.js";
 import { MessageModel } from "../models/Message.js";
 import { UserModel } from "../models/User.js";
 import {
+  advanceBotMotion,
+  getBotNextTargetY,
+  getBotReactionMs,
+  getBotReadyY
+} from "./live-match/bot.js";
+import {
   CHAT_COOLDOWN_MS,
   MATCH_FINALIZATION_ATTEMPTS,
   MATCH_FINALIZATION_RETRY_MS,
@@ -789,6 +795,20 @@ export class LiveMatchService {
     countdownPhase: "opening-serve" | "point-reset",
     durationMs: number
   ) {
+    for (const player of [match.players.left, match.players.right]) {
+      if (!player.isBot) {
+        continue;
+      }
+
+      const readyY = getBotReadyY();
+      player.botAimOffsetY = 0;
+      player.botRetargetAt = undefined;
+      player.botTargetY = readyY;
+      player.botVelocityY = 0;
+      player.paddleY = readyY;
+      player.targetY = readyY;
+    }
+
     match.status = "prestart";
     match.startsAt = Date.now() + durationMs;
     match.countdownPhase = countdownPhase;
@@ -797,27 +817,28 @@ export class LiveMatchService {
 
   private advancePaddle(player: LivePlayer, match: LiveMatch) {
     if (player.isBot) {
-      // Bot tracks the ball with a reaction delay and slight inaccuracy so it is beatable.
-      const reactionLag = 6; // frames of delay (~100ms at 60fps)
-      const inaccuracy = (Math.random() - 0.5) * 30;
-      const ballYDelayed =
-        match.ball.y + match.ball.vy * reactionLag + inaccuracy;
-      const botTarget = clamp(
-        ballYDelayed - GAME_CONSTANTS.paddleHeight / 2,
-        0,
-        GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight
-      );
-      player.targetY = botTarget;
+      const now = Date.now();
 
-      // Bot moves at 85% speed
-      const delta = player.targetY - player.paddleY;
-      const botSpeed = GAME_CONSTANTS.paddleSpeed * 0.85;
-      player.paddleY += clamp(delta, -botSpeed, botSpeed);
-      player.paddleY = clamp(
-        player.paddleY,
-        0,
-        GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight
-      );
+      if (
+        typeof player.botRetargetAt !== "number" ||
+        player.botRetargetAt <= now
+      ) {
+        const nextTarget = getBotNextTargetY(match.ball, player.side);
+        player.botAimOffsetY = nextTarget.aimOffsetY;
+        player.botRetargetAt = now + getBotReactionMs();
+        player.botTargetY = nextTarget.targetY;
+      }
+
+      const targetY = player.botTargetY ?? getBotReadyY();
+      const nextMotion = advanceBotMotion({
+        paddleY: player.paddleY,
+        targetY,
+        velocityY: player.botVelocityY ?? 0
+      });
+
+      player.targetY = targetY;
+      player.botVelocityY = nextMotion.velocityY;
+      player.paddleY = nextMotion.paddleY;
       return;
     }
 

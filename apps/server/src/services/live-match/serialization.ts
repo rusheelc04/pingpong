@@ -9,6 +9,7 @@ import {
 } from "@pingpong/shared";
 
 import { PAUSES_PER_PLAYER } from "./constants.js";
+import { getBotReadyY } from "./bot.js";
 
 import type { LiveMatch, LivePlayer, SessionUserLike } from "./types.js";
 
@@ -34,6 +35,10 @@ export function createLivePlayer(
     socketId: player.socketId,
     paddleY: initialPaddleY,
     targetY: initialPaddleY,
+    botAimOffsetY: player.isBot ? 0 : undefined,
+    botRetargetAt: undefined,
+    botTargetY: player.isBot ? getBotReadyY() : undefined,
+    botVelocityY: player.isBot ? 0 : undefined,
     connected: Boolean(player.socketId) || Boolean(player.isBot),
     lastSeenAt: Date.now()
   };
@@ -64,7 +69,7 @@ export function serializeLiveState(match: LiveMatch): LiveMatchState {
       left: match.players.left.paddleY,
       right: match.players.right.paddleY
     },
-    ball: { x: match.ball.x, y: match.ball.y },
+    ball: match.ball,
     score: match.score,
     startedAt: new Date(match.startedAt).toISOString(),
     startsAt: match.startsAt
@@ -89,7 +94,7 @@ export function serializeLiveState(match: LiveMatch): LiveMatchState {
           right: PAUSES_PER_PLAYER - (match.pausesUsed?.right ?? 0)
         }
       : undefined,
-    serverTime: new Date().toISOString()
+    serverNowMs: Date.now()
   };
 }
 

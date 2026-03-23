@@ -2,10 +2,19 @@ import { useEffect, useRef } from "react";
 
 import {
   GAME_CONSTANTS,
-  type LiveMatchState,
   type PlayerSide,
   type ReplayFrame
 } from "@pingpong/shared";
+
+import { updateClockOffset } from "../lib/live-clock";
+import {
+  advancePredictedPaddle,
+  buildFrameRenderState,
+  getLiveRenderState,
+  type RenderState
+} from "../lib/live-render";
+
+import type { LiveMatchState } from "@pingpong/shared";
 
 interface PongBoardProps {
   state?: LiveMatchState | null;
@@ -15,31 +24,8 @@ interface PongBoardProps {
   controlledSide?: PlayerSide | null;
 }
 
-interface RenderState {
-  ball: {
-    x: number;
-    y: number;
-  };
-  paddles: {
-    left: number;
-    right: number;
-  };
-  score: {
-    left: number;
-    right: number;
-  };
-}
-
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
-}
-
-function getServerTime(state: LiveMatchState) {
-  return new Date(state.serverTime).getTime();
-}
-
-function lerp(start: number, end: number, progress: number) {
-  return start + (end - start) * progress;
 }
 
 function drawBoard(
@@ -124,84 +110,6 @@ function drawBoard(
   );
 }
 
-function buildFrameRenderState(frame: ReplayFrame): RenderState {
-  return {
-    ball: frame.ball,
-    paddles: frame.paddles,
-    score: frame.score
-  };
-}
-
-function interpolateLiveState(
-  snapshots: LiveMatchState[],
-  now: number
-): RenderState | null {
-  if (snapshots.length === 0) {
-    return null;
-  }
-
-  const latest = snapshots[snapshots.length - 1];
-  if (
-    snapshots.length === 1 ||
-    latest.status !== "live" ||
-    latest.startsAt ||
-    latest.countdownPhase
-  ) {
-    return {
-      ball: latest.ball,
-      paddles: latest.paddles,
-      score: latest.score
-    };
-  }
-
-  const targetTime = now - 70;
-  let previous = snapshots[0];
-  let next = snapshots[snapshots.length - 1];
-
-  for (let index = 1; index < snapshots.length; index += 1) {
-    if (getServerTime(snapshots[index]) >= targetTime) {
-      previous = snapshots[index - 1];
-      next = snapshots[index];
-      break;
-    }
-
-    previous = snapshots[index - 1];
-    next = snapshots[index];
-  }
-
-  if (
-    previous.score.left !== next.score.left ||
-    previous.score.right !== next.score.right ||
-    previous.status !== "live" ||
-    next.status !== "live"
-  ) {
-    return {
-      ball: next.ball,
-      paddles: next.paddles,
-      score: next.score
-    };
-  }
-
-  const previousTime = getServerTime(previous);
-  const nextTime = getServerTime(next);
-  const progress =
-    previousTime === nextTime
-      ? 1
-      : clamp01((targetTime - previousTime) / (nextTime - previousTime));
-
-  return {
-    ball: {
-      x: lerp(previous.ball.x, next.ball.x, progress),
-      y: lerp(previous.ball.y, next.ball.y, progress)
-    },
-    paddles: {
-      left: lerp(previous.paddles.left, next.paddles.left, progress),
-      right: lerp(previous.paddles.right, next.paddles.right, progress)
-    },
-    score: next.score
-  };
-}
-
 export function PongBoard({
   state,
   frame,
@@ -215,17 +123,34 @@ export function PongBoard({
   const lastEmittedRef = useRef<number | null>(null);
   const pressedKeysRef = useRef(new Set<string>());
   const snapshotBufferRef = useRef<LiveMatchState[]>([]);
+  const clockOffsetRef = useRef<number | null>(null);
   const liveStateRef = useRef<LiveMatchState | null>(null);
+  const localPaddleYRef = useRef<number | null>(null);
+  const localTargetYRef = useRef<number | null>(null);
+  const lastInputAtRef = useRef<number | null>(null);
+  const lastPredictionAtRef = useRef<number | null>(null);
   const replayFrameRef = useRef<ReplayFrame | null>(null);
   const activePointerRef = useRef<number | null>(null);
 
   useEffect(() => {
     liveStateRef.current = state ?? null;
     if (!state) {
+      clockOffsetRef.current = null;
+      localPaddleYRef.current = null;
+      localTargetYRef.current = null;
+      lastInputAtRef.current = null;
+      lastPredictionAtRef.current = null;
       snapshotBufferRef.current = [];
       trailRef.current = [];
       return;
     }
+
+    const receivedAtMs = Date.now();
+    clockOffsetRef.current = updateClockOffset(
+      clockOffsetRef.current,
+      state.serverNowMs,
+      receivedAtMs
+    );
 
     const nextBuffer = [...snapshotBufferRef.current];
     const previousSnapshot = nextBuffer[nextBuffer.length - 1];
@@ -239,9 +164,10 @@ export function PongBoard({
 
     if (
       !previousSnapshot ||
-      previousSnapshot.serverTime !== state.serverTime ||
+      previousSnapshot.serverNowMs !== state.serverNowMs ||
       previousSnapshot.status !== state.status ||
-      previousSnapshot.startsAt !== state.startsAt
+      previousSnapshot.startsAt !== state.startsAt ||
+      previousSnapshot.countdownPhase !== state.countdownPhase
     ) {
       nextBuffer.push(state);
     } else {
@@ -249,7 +175,34 @@ export function PongBoard({
     }
 
     snapshotBufferRef.current = nextBuffer.slice(-12);
-  }, [state]);
+
+    if (!controlledSide) {
+      return;
+    }
+
+    const authoritativeY = state.paddles[controlledSide];
+    const normalizedPosition =
+      authoritativeY /
+      (GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight);
+    const recentInput =
+      lastInputAtRef.current !== null &&
+      receivedAtMs - lastInputAtRef.current < 160;
+    const scoreChanged =
+      previousSnapshot &&
+      (previousSnapshot.score.left !== state.score.left ||
+        previousSnapshot.score.right !== state.score.right);
+
+    if (
+      localPaddleYRef.current === null ||
+      scoreChanged ||
+      state.status !== "live" ||
+      !recentInput
+    ) {
+      localPaddleYRef.current = authoritativeY;
+      localTargetYRef.current = authoritativeY;
+      keyboardPositionRef.current = normalizedPosition;
+    }
+  }, [controlledSide, state]);
 
   useEffect(() => {
     replayFrameRef.current = frame ?? null;
@@ -259,16 +212,6 @@ export function PongBoard({
 
     trailRef.current = [...trailRef.current, frame.ball].slice(-8);
   }, [frame]);
-
-  useEffect(() => {
-    if (!state || !controlledSide) {
-      return;
-    }
-
-    keyboardPositionRef.current =
-      state.paddles[controlledSide] /
-      (GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight);
-  }, [controlledSide, state]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -301,10 +244,38 @@ export function PongBoard({
     const draw = () => {
       syncCanvasSize();
 
+      const nowMs = Date.now();
       const replayFrame = replayFrameRef.current;
+      const liveState = liveStateRef.current;
+
+      if (liveState && controlledSide && localPaddleYRef.current !== null) {
+        const authoritativeY = liveState.paddles[controlledSide];
+        const targetY = localTargetYRef.current ?? authoritativeY;
+        const elapsedMs = nowMs - (lastPredictionAtRef.current ?? nowMs);
+
+        localPaddleYRef.current = advancePredictedPaddle({
+          authoritativeY,
+          currentY: localPaddleYRef.current,
+          elapsedMs,
+          recentInput:
+            interactive &&
+            lastInputAtRef.current !== null &&
+            nowMs - lastInputAtRef.current < 160,
+          targetY
+        });
+        lastPredictionAtRef.current = nowMs;
+      }
+
       const renderState = replayFrame
         ? buildFrameRenderState(replayFrame)
-        : interpolateLiveState(snapshotBufferRef.current, Date.now());
+        : getLiveRenderState({
+            snapshots: snapshotBufferRef.current,
+            clientNowMs: nowMs,
+            clockOffsetMs: clockOffsetRef.current,
+            controlledSide,
+            predictedPaddleY:
+              interactive && controlledSide ? localPaddleYRef.current : null
+          });
 
       if (renderState) {
         trailRef.current = [...trailRef.current, renderState.ball].slice(-8);
@@ -316,7 +287,7 @@ export function PongBoard({
 
     frameId = window.requestAnimationFrame(draw);
     return () => window.cancelAnimationFrame(frameId);
-  }, []);
+  }, [controlledSide, interactive]);
 
   useEffect(() => {
     if (!interactive || !onMove || !canvasRef.current) {
@@ -335,6 +306,12 @@ export function PongBoard({
       }
 
       lastEmittedRef.current = quantized;
+      localTargetYRef.current =
+        quantized * (GAME_CONSTANTS.boardHeight - GAME_CONSTANTS.paddleHeight);
+      if (localPaddleYRef.current === null) {
+        localPaddleYRef.current = localTargetYRef.current;
+      }
+      lastInputAtRef.current = Date.now();
       onMove(quantized);
     };
 

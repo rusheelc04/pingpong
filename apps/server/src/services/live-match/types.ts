@@ -21,6 +21,10 @@ export interface LivePlayer extends PublicPlayer {
   socketId?: string;
   paddleY: number;
   targetY: number;
+  botAimOffsetY?: number;
+  botRetargetAt?: number;
+  botTargetY?: number;
+  botVelocityY?: number;
   connected: boolean;
   lastSeenAt: number;
   disconnectDeadline?: number;

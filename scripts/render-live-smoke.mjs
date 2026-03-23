@@ -4,6 +4,8 @@ import https from "node:https";
 import process from "node:process";
 import { io as createClient } from "socket.io-client";
 
+import { SMOKE_TEST_DISPLAY_NAME_PREFIXES } from "./lib/smoke-cleanup.mjs";
+
 const appOrigin = process.env.APP_ORIGIN;
 
 if (!appOrigin) {
@@ -134,7 +136,7 @@ async function withRetries(label, attempts, action) {
   throw lastError ?? new Error(`${label} failed.`);
 }
 
-const displayName = `RenderSmoke${Date.now()}`;
+const displayName = `${SMOKE_TEST_DISPLAY_NAME_PREFIXES[0]}${Date.now()}`;
 const loginResponse = await request({
   method: "POST",
   path: "/api/auth/guest",
@@ -217,6 +219,9 @@ try {
 
   console.log(
     `Render live smoke passed on ${origin.origin} for match ${joinResult.status.matchId}.`
+  );
+  console.log(
+    "Run `MONGO_URI=<atlas-uri> npm run smoke:cleanup` to remove smoke users and their related records."
   );
 } finally {
   socket.disconnect();

@@ -1,19 +1,34 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import type { PlayerSide } from "@pingpong/shared";
+import type { LiveMatchState, PlayerSide } from "@pingpong/shared";
 
 import { ChatPanel } from "../components/ChatPanel";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { PongBoard } from "../components/PongBoard";
 import { useAppContext } from "../lib/app-context";
+import { getCountdownValue } from "../lib/countdown";
+import { updateClockOffset } from "../lib/live-clock";
 import { useLiveMatchSession } from "../lib/use-live-match-session";
 
-function useCountdownValue(startsAt: string | undefined) {
+function useCountdownValue(liveState: LiveMatchState | null) {
   const [now, setNow] = useState(Date.now());
+  const clockOffsetRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!startsAt) {
+    if (!liveState?.serverNowMs) {
+      return;
+    }
+
+    clockOffsetRef.current = updateClockOffset(
+      clockOffsetRef.current,
+      liveState.serverNowMs,
+      Date.now()
+    );
+  }, [liveState?.serverNowMs]);
+
+  useEffect(() => {
+    if (!liveState?.startsAt || liveState.status !== "prestart") {
       return;
     }
 
@@ -22,22 +37,14 @@ function useCountdownValue(startsAt: string | undefined) {
     }, 80);
 
     return () => window.clearInterval(interval);
-  }, [startsAt]);
+  }, [liveState?.startsAt, liveState?.status]);
 
-  if (!startsAt) {
-    return null;
-  }
-
-  const remainingMs = new Date(startsAt).getTime() - now;
-  if (remainingMs < -320) {
-    return null;
-  }
-
-  if (remainingMs <= 0) {
-    return 0;
-  }
-
-  return Math.ceil(remainingMs / 1000);
+  return getCountdownValue({
+    clientNowMs: now,
+    clockOffsetMs: clockOffsetRef.current,
+    startsAt: liveState?.startsAt,
+    status: liveState?.status
+  });
 }
 
 function PauseCountdown({ resumesAt }: { resumesAt: string }) {
@@ -82,7 +89,7 @@ export function MatchPage() {
   const [focusPlay, setFocusPlay] = useState(false);
   const [scoreFlashVisible, setScoreFlashVisible] = useState(false);
   const previousScoreRef = useRef<string | null>(null);
-  const countdownValue = useCountdownValue(liveState?.startsAt);
+  const countdownValue = useCountdownValue(liveState);
 
   useEffect(() => {
     if (!finalizationFailed) {

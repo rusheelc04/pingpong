@@ -8,6 +8,7 @@ export const GAME_CONSTANTS = {
   paddleWidth: 18,
   paddleHeight: 120,
   paddleSpeed: 18,
+  simulationTickMs: 1000 / 60,
   ballRadius: 10,
   serveSpeed: 8,
   maxBallSpeed: 16,
@@ -126,7 +127,7 @@ export interface LiveMatchState {
     right: PublicPlayer;
   };
   paddles: ScoreState;
-  ball: Pick<BallState, "x" | "y">;
+  ball: BallState;
   score: ScoreState;
   startedAt: string;
   startsAt?: string;
@@ -134,7 +135,7 @@ export interface LiveMatchState {
   reconnectDeadline?: string;
   pauseInfo?: PauseState;
   pausesLeft?: { left: number; right: number };
-  serverTime: string;
+  serverNowMs: number;
 }
 
 export interface CompletedMatchSummary {

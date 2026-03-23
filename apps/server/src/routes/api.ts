@@ -16,6 +16,7 @@ import { logger } from "../logger.js";
 import { MatchModel, type MatchDocument } from "../models/Match.js";
 import { MessageModel, type MessageDocument } from "../models/Message.js";
 import { UserModel, type UserDocument } from "../models/User.js";
+import { getRankedLeaderboard } from "../services/leaderboard.js";
 import {
   LIVE_MATCH_ERRORS,
   type LiveMatchService
@@ -184,20 +185,8 @@ export function createApiRouter(liveMatchService: LiveMatchService) {
   router.get(
     "/leaderboard",
     asyncHandler(async (_req, res) => {
-      const users = await UserModel.find()
-        .sort({ rating: -1, wins: -1 })
-        .limit(25);
       res.json({
-        leaderboard: users.map((user, index) => ({
-          rank: index + 1,
-          userId: user._id.toString(),
-          displayName: user.displayName,
-          avatarUrl: user.avatarUrl,
-          rating: user.rating,
-          wins: user.wins,
-          losses: user.losses,
-          matchesPlayed: user.matchesPlayed
-        }))
+        leaderboard: await getRankedLeaderboard()
       });
     })
   );

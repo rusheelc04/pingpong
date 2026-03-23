@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { apiFetch, isAbortError } from "../lib/api";
 
@@ -83,23 +83,14 @@ export function LeaderboardPage() {
     };
   }, [loadLeaderboard]);
 
-  const rankedEntries = useMemo(
-    () => entries.filter((entry) => entry.matchesPlayed > 0),
-    [entries]
-  );
-  const provisionalEntries = useMemo(
-    () => entries.filter((entry) => entry.matchesPlayed === 0),
-    [entries]
-  );
-
   return (
     <main className="page-shell page-stack">
       <section className="page-header">
         <span className="eyebrow">Competitive Ladder</span>
         <h1>Current Arena Standings</h1>
         <p className="lead-copy">
-          Ranked players with completed matches lead the main ladder. Fresh
-          guests stay visible, but separate.
+          The ladder only reflects completed ranked human matches, so practice
+          runs and private rooms never pollute the standings.
         </p>
       </section>
 
@@ -108,7 +99,7 @@ export function LeaderboardPage() {
           <div>
             <h3>Ranked Ladder</h3>
             <p className="muted-copy">
-              Only players with completed matches appear in the primary table.
+              Only ranked human-vs-human results count toward the arena ladder.
             </p>
           </div>
           <button
@@ -123,7 +114,7 @@ export function LeaderboardPage() {
 
         {error ? <p className="error-copy">{error}</p> : null}
 
-        {rankedEntries.length === 0 ? (
+        {entries.length === 0 ? (
           <div className="empty-card">
             <strong>No ranked results yet</strong>
             <p className="muted-copy">
@@ -131,24 +122,9 @@ export function LeaderboardPage() {
             </p>
           </div>
         ) : (
-          <LeaderboardRows entries={rankedEntries} />
+          <LeaderboardRows entries={entries} />
         )}
       </section>
-
-      {provisionalEntries.length > 0 ? (
-        <section className="panel">
-          <div className="panel-toolbar">
-            <div>
-              <h3>New Players</h3>
-              <p className="muted-copy">
-                These guests have joined the arena but do not have completed
-                results yet.
-              </p>
-            </div>
-          </div>
-          <LeaderboardRows entries={provisionalEntries} />
-        </section>
-      ) : null}
     </main>
   );
 }

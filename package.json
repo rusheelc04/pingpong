@@ -22,6 +22,7 @@
     "e2e": "npm run e2e -w @pingpong/web",
     "smoke:prod": "node scripts/prod-smoke.mjs",
     "smoke:deploy": "node scripts/render-live-smoke.mjs",
+    "smoke:cleanup": "node scripts/cleanup-smoke-data.mjs",
     "audit": "npm audit --omit=dev",
     "check": "npm run lint && npm run test && npm run build && npm run audit",
     "mongo:up": "docker compose up -d mongo",

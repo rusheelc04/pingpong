@@ -31,6 +31,7 @@ Ping Pong Arena ships as a single Render web service backed by Mongo Atlas.
 4. Confirm Render environment variables are set.
 5. Deploy on Render.
 6. Run `npm run smoke:deploy` with `APP_ORIGIN` set to the deployed HTTPS origin.
+7. Run `npm run smoke:cleanup` with `MONGO_URI` set to production so smoke users and their related records do not linger in the ladder.
 
 ## Post-Deploy Manual Verification
 
@@ -42,6 +43,7 @@ Ping Pong Arena ships as a single Render web service backed by Mongo Atlas.
 6. Disconnect beyond the grace window and confirm a forfeit result.
 7. Replay load, profile history, and leaderboard refresh.
 8. Mobile landing-page pass.
+9. Confirm the leaderboard is clean after smoke cleanup.
 
 ## Bounded Load Rehearsal
 

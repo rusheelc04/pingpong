@@ -1,5 +1,7 @@
 // These timings are shared across queueing, reconnects, and the live match loop.
-export const TICK_MS = 1000 / 60;
+import { GAME_CONSTANTS } from "@pingpong/shared";
+
+export const TICK_MS = GAME_CONSTANTS.simulationTickMs;
 export const SNAPSHOT_EVERY_TICKS = 2;
 export const RECONNECT_GRACE_MS = 20_000;
 export const CHAT_COOLDOWN_MS = 750;
