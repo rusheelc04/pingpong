@@ -14,6 +14,7 @@ import { connectToDatabase, getMongoUri } from "./db.js";
 import { logger } from "./logger.js";
 import { createApiRouter } from "./routes/api.js";
 import type { LiveMatchService } from "./services/liveMatchService.js";
+import { cleanupStaleLiveMatches } from "./services/staleLiveCleanup.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,7 +38,9 @@ function allowRequestOrigin(
 
 export async function createApp(liveMatchService: LiveMatchService) {
   await connectToDatabase();
+  await cleanupStaleLiveMatches();
   const mongoUri = await getMongoUri();
+  const useMemorySessionStore = config.NODE_ENV === "test";
 
   const app = express();
   app.set("trust proxy", isProduction ? 1 : 0);
@@ -46,10 +49,12 @@ export async function createApp(liveMatchService: LiveMatchService) {
     secret: config.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: mongoUri,
-      collectionName: "sessions"
-    }),
+    store: useMemorySessionStore
+      ? new session.MemoryStore()
+      : MongoStore.create({
+          mongoUrl: mongoUri,
+          collectionName: "sessions"
+        }),
     cookie: {
       httpOnly: true,
       sameSite: "lax",

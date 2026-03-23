@@ -3,13 +3,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   ChatMessage,
   LiveMatchState,
+  MatchFinalizationErrorPayload,
   MatchReconnectWindowPayload,
   MatchSummary,
   PresenceUpdatePayload,
   PlayerSide
 } from "@pingpong/shared";
 
-import { apiFetch, isAbortError } from "./api";
+import { apiFetch, formatAppError, isAbortError } from "./api";
 import { useAppContext } from "./app-context";
 
 interface MatchResponse {
@@ -36,6 +37,7 @@ export function useLiveMatchSession(matchId: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [presence, setPresence] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+  const [finalizationFailed, setFinalizationFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [reconnectDeadline, setReconnectDeadline] = useState<string | null>(
     null
@@ -48,6 +50,7 @@ export function useLiveMatchSession(matchId: string) {
     resumeAttemptedRef.current = false;
     setLoading(true);
     setError(null);
+    setFinalizationFailed(false);
     setReconnectDeadline(null);
     setSummary(null);
     setLiveState(null);
@@ -63,15 +66,12 @@ export function useLiveMatchSession(matchId: string) {
         setMessages(result.messages);
         setLiveState(result.liveState);
         setPresence(getInitialPresence(result.liveState));
+        setFinalizationFailed(false);
         setShouldResume(Boolean(result.liveState));
       })
       .catch((requestError: unknown) => {
         if (!isAbortError(requestError)) {
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Could not load the match."
-          );
+          setError(formatAppError(requestError));
         }
       })
       .finally(() => {
@@ -97,6 +97,7 @@ export function useLiveMatchSession(matchId: string) {
           setLiveState(result.state);
           setPresence(getInitialPresence(result.state));
           setError(null);
+          setFinalizationFailed(false);
           return;
         }
 
@@ -105,7 +106,7 @@ export function useLiveMatchSession(matchId: string) {
           result.error &&
           result.error !== "Match is no longer live."
         ) {
-          setError(result.error);
+          setError(formatAppError(result.error));
         }
       }
     );
@@ -129,6 +130,7 @@ export function useLiveMatchSession(matchId: string) {
           current[payload.players.right.userId] ?? true
       }));
       setError(null);
+      setFinalizationFailed(false);
     };
 
     const handleChat = (payload: ChatMessage) => {
@@ -162,6 +164,23 @@ export function useLiveMatchSession(matchId: string) {
       setReconnectDeadline(null);
       setShouldResume(false);
       setError(null);
+      setFinalizationFailed(false);
+    };
+
+    const handleFinalizationError = (
+      payload: MatchFinalizationErrorPayload
+    ) => {
+      if (payload.matchId !== matchId) {
+        return;
+      }
+
+      setSummary(null);
+      setLiveState(null);
+      setReconnectDeadline(null);
+      setShouldResume(false);
+      setPresence({});
+      setFinalizationFailed(true);
+      setError(formatAppError(payload.error));
     };
 
     socket.on("state:snapshot", handleLiveState);
@@ -170,6 +189,7 @@ export function useLiveMatchSession(matchId: string) {
     socket.on("presence:update", handlePresence);
     socket.on("match:reconnect-window", handleReconnect);
     socket.on("match:end", handleEnd);
+    socket.on("match:finalization-error", handleFinalizationError);
 
     return () => {
       socket.off("state:snapshot", handleLiveState);
@@ -178,6 +198,7 @@ export function useLiveMatchSession(matchId: string) {
       socket.off("presence:update", handlePresence);
       socket.off("match:reconnect-window", handleReconnect);
       socket.off("match:end", handleEnd);
+      socket.off("match:finalization-error", handleFinalizationError);
     };
   }, [matchId, socket]);
 
@@ -205,6 +226,7 @@ export function useLiveMatchSession(matchId: string) {
 
   return {
     error,
+    finalizationFailed,
     liveState,
     loading,
     messages,

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 export interface UserDocument extends mongoose.Document {
   displayName: string;
-  provider: "guest" | "github";
+  provider: "guest";
   providerId: string;
   avatarUrl?: string | null;
   rating: number;
@@ -17,7 +17,7 @@ export interface UserDocument extends mongoose.Document {
 const userSchema = new mongoose.Schema<UserDocument>(
   {
     displayName: { type: String, required: true, trim: true, maxlength: 24 },
-    provider: { type: String, enum: ["guest", "github"], default: "guest" },
+    provider: { type: String, enum: ["guest"], default: "guest" },
     providerId: { type: String, required: true, unique: true, index: true },
     avatarUrl: { type: String, default: null },
     rating: { type: Number, default: 1000, min: 100 },

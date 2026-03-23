@@ -1,5 +1,4 @@
 node_modules
-legacy/public/node_modules
 dist
 build
 coverage
@@ -11,3 +10,16 @@ test-results
 .env
 .env.local
 npm-debug.log*
+*.log
+docs
+scripts
+render.yaml
+.github
+.gitattributes
+CONTRIBUTING.md
+LICENSE
+README.md
+compose.yaml
+.prettierignore
+.prettierrc.json
+eslint.config.js

@@ -29,5 +29,5 @@ COPY --from=build /app/packages/shared/dist packages/shared/dist
 
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:3001/api/healthz || exit 1
+  CMD sh -c 'wget -qO- "http://localhost:${PORT:-3001}/api/healthz" || exit 1'
 CMD ["npm", "start"]

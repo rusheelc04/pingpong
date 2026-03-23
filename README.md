@@ -191,16 +191,18 @@ If Docker is unavailable, remove `MONGO_URI` from `.env` and the server will fal
 
 ## Scripts
 
-| Command         | What it does                                                         |
-| --------------- | -------------------------------------------------------------------- |
-| `npm run dev`   | Starts Docker Mongo, the shared watcher, the server, and the web app |
-| `npm run build` | Builds shared, web, and server workspaces                            |
-| `npm run lint`  | Runs type checks, ESLint, and Prettier checks                        |
-| `npm test`      | Runs shared, server, and web test suites                             |
-| `npm run e2e`   | Runs the Playwright browser flows                                    |
-| `npm run audit` | Runs an npm dependency audit                                         |
-| `npm run clean` | Removes generated build and test artifacts                           |
-| `npm start`     | Starts the built server in production mode                           |
+| Command                | What it does                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `npm run dev`          | Starts Docker Mongo, the shared watcher, the server, and the web app          |
+| `npm run build`        | Builds shared, web, and server workspaces                                     |
+| `npm run lint`         | Runs type checks, ESLint, and Prettier checks                                 |
+| `npm test`             | Runs shared, server, and web test suites                                      |
+| `npm run e2e`          | Runs the Playwright browser flows                                             |
+| `npm run smoke:prod`   | Boots the compiled production server and checks health plus the SPA shell     |
+| `npm run smoke:deploy` | Verifies guest auth and a live practice match against a deployed HTTPS origin |
+| `npm run audit`        | Runs an npm dependency audit                                                  |
+| `npm run clean`        | Removes generated build and test artifacts                                    |
+| `npm start`            | Starts the built server in production mode                                    |
 
 ## Testing
 
@@ -210,14 +212,15 @@ Coverage includes shared helpers, server match flows, web page rendering, and br
 
 ## Deployment Notes
 
-The production setup is straightforward:
+The production setup is straightforward, but v1 has an important constraint:
 
-- build the web app and server with `npm run build`
-- provide a real `MONGO_URI` and `SESSION_SECRET`
+- keep Render on a single app instance because live queue, room, and match state are held in process memory
+- deploy during a quiet window because restarts can interrupt active matches
+- use a real `MONGO_URI` and `SESSION_SECRET`
 - set `NODE_ENV=production`
 - run `npm start`
 
-In production, the Express server serves the built frontend and API from the same origin.
+In production, the Express server serves the built frontend and API from the same origin. For the full Render + Mongo Atlas checklist, post-deploy smoke steps, and bounded load rehearsal flow, see [docs/deployment.md](docs/deployment.md).
 
 ## Notes
 
@@ -228,6 +231,7 @@ In production, the Express server serves the built frontend and API from the sam
 ## More Docs
 
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [docs/deployment.md](docs/deployment.md)
 - [docs/diagrams/README.md](docs/diagrams/README.md)
 - [docs/assets/README.md](docs/assets/README.md)
 - [docs/diagrams/deployment-topology.mmd](docs/diagrams/deployment-topology.mmd)

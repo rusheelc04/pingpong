@@ -11,7 +11,7 @@ import type {
 } from "@pingpong/shared";
 
 export interface SessionUserLike extends PublicPlayer {
-  provider: "guest" | "github";
+  provider: "guest";
 }
 
 export interface LivePlayer extends PublicPlayer {
@@ -45,7 +45,6 @@ export interface LiveMatch {
   lastReplayCaptureAt: number;
   replayFrames: ReplayFrame[];
   snapshotTick: number;
-  spectators: Set<string>;
   stats: MatchStats & {
     currentRally: number;
   };

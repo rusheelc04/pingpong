@@ -432,5 +432,12 @@ export function PongBoard({
     };
   }, [interactive, onMove]);
 
-  return <canvas className="pong-board" ref={canvasRef} />;
+  return (
+    <canvas
+      aria-label="Live ping pong game"
+      className="pong-board"
+      ref={canvasRef}
+      role="img"
+    />
+  );
 }

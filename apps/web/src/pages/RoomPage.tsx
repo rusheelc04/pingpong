@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { formatAppError } from "../lib/api";
 import { useAppContext } from "../lib/app-context";
 
 export function RoomPage() {
@@ -38,7 +39,9 @@ export function RoomPage() {
       { code: roomCode },
       (result: { ok: boolean; error?: string }) => {
         if (!result.ok) {
-          setError(result.error ?? "Could not join this private room.");
+          setError(
+            formatAppError(result.error ?? "Could not join this private room.")
+          );
         }
       }
     );

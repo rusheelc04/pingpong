@@ -12,8 +12,7 @@ import {
   type QueueStatusPayload,
   queueJoinSchema,
   resumeMatchSchema,
-  roomJoinSchema,
-  spectateJoinSchema
+  roomJoinSchema
 } from "@pingpong/shared";
 
 import { config, isProduction } from "../config.js";
@@ -285,28 +284,6 @@ export function initializeSocket(
           ok: false,
           error:
             error instanceof Error ? error.message : "Could not toggle pause."
-        });
-      }
-    });
-
-    socket.on("spectate:join", async (payload, callback) => {
-      if (isRateLimited(socket.id, "spectate:join")) {
-        rejectAck(
-          callback as SocketAck,
-          "Too many requests. Slow down and try again."
-        );
-        return;
-      }
-
-      try {
-        const parsed = spectateJoinSchema.parse(payload);
-        const state = await liveMatchService.spectate(socket, parsed.matchId);
-        callback?.({ ok: true, state });
-      } catch (error) {
-        callback?.({
-          ok: false,
-          error:
-            error instanceof Error ? error.message : "Could not spectate match."
         });
       }
     });

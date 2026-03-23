@@ -16,7 +16,10 @@ import { logger } from "../logger.js";
 import { MatchModel, type MatchDocument } from "../models/Match.js";
 import { MessageModel, type MessageDocument } from "../models/Message.js";
 import { UserModel, type UserDocument } from "../models/User.js";
-import type { LiveMatchService } from "../services/liveMatchService.js";
+import {
+  LIVE_MATCH_ERRORS,
+  type LiveMatchService
+} from "../services/liveMatchService.js";
 
 function asyncHandler(
   handler: (req: Request, res: Response, next: NextFunction) => Promise<void>
@@ -66,6 +69,10 @@ function serializeCompletedMatch(match: MatchDocument): MatchSummary {
     replayAvailable: match.replayFrames.length > 0,
     isLive: false
   };
+}
+
+function userParticipatedInMatch(match: MatchDocument, userId: string) {
+  return match.players.some((player) => player.userId === userId);
 }
 
 function destroySession(req: Request) {
@@ -219,11 +226,26 @@ export function createApiRouter(liveMatchService: LiveMatchService) {
   router.get(
     "/matches/:id",
     asyncHandler(async (req, res) => {
+      if (!req.session.userId) {
+        res.status(401).json({ error: "Sign in as a guest first." });
+        return;
+      }
+
       const matchId = String(req.params.id);
-      const liveState = liveMatchService.getMatchState(matchId);
       const match = await MatchModel.findById(matchId);
+      const liveState = liveMatchService.getMatchState(matchId);
       if (!match && !liveState) {
         res.status(404).json({ error: "Match not found." });
+        return;
+      }
+
+      const canAccess = match
+        ? userParticipatedInMatch(match, req.session.userId)
+        : liveMatchService.canUserAccessMatch(matchId, req.session.userId);
+      if (!canAccess) {
+        res
+          .status(403)
+          .json({ error: LIVE_MATCH_ERRORS.unauthorizedMatchAccess });
         return;
       }
 
@@ -243,9 +265,21 @@ export function createApiRouter(liveMatchService: LiveMatchService) {
   router.get(
     "/matches/:id/replay",
     asyncHandler(async (req, res) => {
+      if (!req.session.userId) {
+        res.status(401).json({ error: "Sign in as a guest first." });
+        return;
+      }
+
       const match = await MatchModel.findById(String(req.params.id));
       if (!match || match.status !== "ended") {
         res.status(404).json({ error: "Replay not found." });
+        return;
+      }
+
+      if (!userParticipatedInMatch(match, req.session.userId)) {
+        res
+          .status(403)
+          .json({ error: LIVE_MATCH_ERRORS.unauthorizedMatchAccess });
         return;
       }
 
@@ -277,15 +311,35 @@ export function createApiRouter(liveMatchService: LiveMatchService) {
         return;
       }
 
-      const room = liveMatchService.createPrivateRoom({
-        userId: user._id.toString(),
-        displayName: user.displayName,
-        avatarUrl: user.avatarUrl,
-        provider: user.provider,
-        rating: user.rating
-      });
+      try {
+        const room = liveMatchService.createPrivateRoom({
+          userId: user._id.toString(),
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          provider: user.provider,
+          rating: user.rating
+        });
 
-      res.status(201).json({ room });
+        res.status(201).json({ room });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === LIVE_MATCH_ERRORS.alreadyInLiveMatch
+        ) {
+          res.status(409).json({ error: error.message });
+          return;
+        }
+
+        if (
+          error instanceof Error &&
+          error.message === LIVE_MATCH_ERRORS.maintenanceOrDraining
+        ) {
+          res.status(503).json({ error: error.message });
+          return;
+        }
+
+        throw error;
+      }
     })
   );
 

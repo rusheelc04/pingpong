@@ -1,3 +1,29 @@
+const FRIENDLY_ERROR_MESSAGES: Record<string, string> = {
+  "already-in-live-match": "You already have a live match in progress.",
+  "unauthorized-match-access":
+    "You do not have access to this match or replay.",
+  "unauthorized-chat-access": "You cannot send chat in this match.",
+  "maintenance-or-draining":
+    "Matchmaking is temporarily unavailable while the server is draining.",
+  "match-finalization-failed":
+    "This match ended, but the server could not safely save the result."
+};
+
+export function formatAppError(error: unknown) {
+  const rawMessage =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : null;
+
+  if (!rawMessage) {
+    return "Request failed.";
+  }
+
+  return FRIENDLY_ERROR_MESSAGES[rawMessage] ?? rawMessage;
+}
+
 // The frontend always sends cookies so the session stays consistent across fetches and sockets.
 export async function apiFetch<T>(
   input: RequestInfo | URL,

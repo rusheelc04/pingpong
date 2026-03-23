@@ -7,14 +7,16 @@ import { z } from "zod";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// The server can be started from the repo root or the workspace, so we try both env locations.
-const envCandidates = [
-  path.resolve(process.cwd(), ".env"),
-  path.resolve(__dirname, "../../../.env")
-];
+if (process.env.NODE_ENV !== "test") {
+  // The server can be started from the repo root or the workspace, so we try both env locations.
+  const envCandidates = [
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(__dirname, "../../../.env")
+  ];
 
-for (const envPath of envCandidates) {
-  loadDotEnv({ path: envPath, override: false });
+  for (const envPath of envCandidates) {
+    loadDotEnv({ path: envPath, override: false });
+  }
 }
 
 const envSchema = z.object({

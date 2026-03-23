@@ -8,3 +8,5 @@ export const PRIVATE_ROOM_DISCONNECT_GRACE_MS = 5 * 60_000;
 export const PRIVATE_ROOM_SWEEP_MS = 60_000;
 export const MAX_PAUSE_MS = 60_000;
 export const PAUSES_PER_PLAYER = 2;
+export const MATCH_FINALIZATION_ATTEMPTS = 3;
+export const MATCH_FINALIZATION_RETRY_MS = 250;

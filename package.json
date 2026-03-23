@@ -20,6 +20,8 @@
     "lint": "npm run typecheck && npm run lint:eslint && npm run format:check",
     "test": "npm run build -w @pingpong/shared && npm run test -w @pingpong/shared && npm run test -w @pingpong/server && npm run test -w @pingpong/web",
     "e2e": "npm run e2e -w @pingpong/web",
+    "smoke:prod": "node scripts/prod-smoke.mjs",
+    "smoke:deploy": "node scripts/render-live-smoke.mjs",
     "audit": "npm audit --omit=dev",
     "check": "npm run lint && npm run test && npm run build && npm run audit",
     "mongo:up": "docker compose up -d mongo",

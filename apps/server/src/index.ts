@@ -74,9 +74,17 @@ async function main() {
     }
 
     shuttingDown = true;
+    liveMatchService.beginDrain();
+    const drainSnapshot = liveMatchService.getDrainSnapshot();
     logger.info(
       `${signal} received. Closing live matches and network listeners.`
     );
+    if (drainSnapshot.length > 0) {
+      logger.warn(
+        { activeMatches: drainSnapshot },
+        "Shutdown interrupted live matches."
+      );
+    }
     liveMatchService.dispose();
     io.close();
     await Promise.allSettled([

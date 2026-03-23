@@ -10,7 +10,10 @@ import {
 } from "react";
 import type { PropsWithChildren } from "react";
 
-import type { SessionUser } from "@pingpong/shared";
+import type {
+  MatchFinalizationErrorPayload,
+  SessionUser
+} from "@pingpong/shared";
 import { io, type Socket } from "socket.io-client";
 
 import { apiFetch, isAbortError } from "./api";
@@ -91,15 +94,24 @@ export function AppProvider({ children }: PropsWithChildren) {
       setActiveMatchId(null);
       void refreshSession();
     };
+    const handleMatchFinalizationError = (
+      payload: MatchFinalizationErrorPayload
+    ) => {
+      void payload;
+      setActiveMatchId(null);
+      void refreshSession();
+    };
 
     socket.on("match:found", handleMatchLink);
     socket.on("match:start", handleMatchLink);
     socket.on("match:end", handleMatchEnd);
+    socket.on("match:finalization-error", handleMatchFinalizationError);
 
     return () => {
       socket.off("match:found", handleMatchLink);
       socket.off("match:start", handleMatchLink);
       socket.off("match:end", handleMatchEnd);
+      socket.off("match:finalization-error", handleMatchFinalizationError);
       socket.disconnect();
       socketRef.current = null;
       setSocket(null);

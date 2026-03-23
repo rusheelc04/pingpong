@@ -21,7 +21,7 @@ export const GAME_CONSTANTS = {
 } as const;
 
 export type MatchMode = "ranked" | "private" | "practice";
-export type MatchStatus = "waiting" | "prestart" | "live" | "paused" | "ended";
+export type MatchStatus = "prestart" | "live" | "paused" | "ended";
 export type PersistedMatchStatus = "live" | "ended";
 export type MatchEndedBy = "score" | "forfeit";
 export type PlayerSide = "left" | "right";
@@ -48,7 +48,7 @@ export interface PublicPlayer {
 }
 
 export interface SessionUser extends PublicPlayer {
-  provider: "guest" | "github";
+  provider: "guest";
 }
 
 export interface QueueTicket {
@@ -128,7 +128,6 @@ export interface LiveMatchState {
   paddles: ScoreState;
   ball: Pick<BallState, "x" | "y">;
   score: ScoreState;
-  spectatorCount: number;
   startedAt: string;
   startsAt?: string;
   countdownPhase?: CountdownPhase;
@@ -136,17 +135,6 @@ export interface LiveMatchState {
   pauseInfo?: PauseState;
   pausesLeft?: { left: number; right: number };
   serverTime: string;
-}
-
-export interface ActiveMatchSummary {
-  id: string;
-  mode: MatchMode;
-  ranked: boolean;
-  roomCode?: string;
-  status: "live";
-  players: MatchPlayerSummary[];
-  startedAt: string;
-  isLive: true;
 }
 
 export interface CompletedMatchSummary {
@@ -207,6 +195,11 @@ export interface MatchReconnectWindowPayload {
   playerId: string;
 }
 
+export interface MatchFinalizationErrorPayload {
+  matchId: string;
+  error: string;
+}
+
 export const guestSessionSchema = z.object({
   displayName: z
     .string()
@@ -244,10 +237,6 @@ export const inputMoveSchema = z.object({
 export const chatSendSchema = z.object({
   matchId: z.string().trim().min(1),
   body: z.string().trim().min(1).max(240)
-});
-
-export const spectateJoinSchema = z.object({
-  matchId: z.string().trim().min(1)
 });
 
 export const pauseToggleSchema = z.object({

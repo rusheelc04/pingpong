@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { apiFetch } from "../lib/api";
+import { apiFetch, formatAppError } from "../lib/api";
 import { useAppContext } from "../lib/app-context";
 
 interface QueueStatus {
@@ -28,6 +28,32 @@ export function PlayPage() {
   const [error, setError] = useState<string | null>(null);
   const [roomCreating, setRoomCreating] = useState(false);
   const [showPracticeOffer, setShowPracticeOffer] = useState(false);
+
+  const joinPracticeMatch = (leaveQueueFirst = false) => {
+    if (!socket) {
+      setError("Live matchmaking is unavailable right now.");
+      return;
+    }
+
+    setError(null);
+    if (leaveQueueFirst) {
+      socket.emit("queue:leave");
+      setStatus(null);
+      setShowPracticeOffer(false);
+    }
+
+    socket.emit(
+      "queue:join",
+      { mode: "practice" },
+      (result: { ok: boolean; error?: string }) => {
+        if (!result.ok) {
+          setError(
+            formatAppError(result.error ?? "Could not start practice match.")
+          );
+        }
+      }
+    );
+  };
 
   useEffect(() => {
     if (!socket) {
@@ -146,7 +172,11 @@ export function PlayPage() {
                   { mode: "ranked" },
                   (result: { ok: boolean; error?: string }) => {
                     if (!result.ok) {
-                      setError(result.error ?? "Could not join ranked queue.");
+                      setError(
+                        formatAppError(
+                          result.error ?? "Could not join ranked queue."
+                        )
+                      );
                     }
                   }
                 );
@@ -158,10 +188,7 @@ export function PlayPage() {
             {showPracticeOffer ? (
               <button
                 className="ghost-button"
-                onClick={() => {
-                  socket?.emit("queue:leave");
-                  socket?.emit("queue:join", { mode: "practice" });
-                }}
+                onClick={() => joinPracticeMatch(true)}
                 type="button"
               >
                 No opponent yet? Start a bot match
@@ -194,11 +221,7 @@ export function PlayPage() {
                   );
                   navigate(`/rooms/${result.room.code}`);
                 } catch (requestError) {
-                  setError(
-                    requestError instanceof Error
-                      ? requestError.message
-                      : "Could not create a private room."
-                  );
+                  setError(formatAppError(requestError));
                 } finally {
                   setRoomCreating(false);
                 }
@@ -239,7 +262,7 @@ export function PlayPage() {
             </p>
             <button
               className="ghost-button"
-              onClick={() => socket?.emit("queue:join", { mode: "practice" })}
+              onClick={() => joinPracticeMatch()}
               type="button"
             >
               Start Practice Match

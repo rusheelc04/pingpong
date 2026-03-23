@@ -27,6 +27,7 @@ describe("MatchPage", () => {
   it("suppresses stale live-only errors once a completed summary exists", () => {
     mockUseLiveMatchSession.mockReturnValue({
       error: "Match is no longer live.",
+      finalizationFailed: false,
       liveState: null,
       loading: false,
       messages: [],
@@ -88,5 +89,39 @@ describe("MatchPage", () => {
     expect(
       screen.queryByText(/match is no longer live/i)
     ).not.toBeInTheDocument();
+  });
+
+  it("shows a recovery panel when finalization fails", () => {
+    mockUseLiveMatchSession.mockReturnValue({
+      error:
+        "This match ended, but the server could not safely save the result.",
+      finalizationFailed: true,
+      liveState: null,
+      loading: false,
+      messages: [],
+      playerRole: "left",
+      presence: {},
+      reconnectDeadline: null,
+      socket: null,
+      summary: null
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/matches/live-1"]}>
+        <Routes>
+          <Route path="/matches/:matchId" element={<MatchPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /we could not save that result/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/could not safely save the result/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /back to arena hub/i })
+    ).toBeInTheDocument();
   });
 });

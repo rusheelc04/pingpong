@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import type { PlayerSide } from "@pingpong/shared";
 
@@ -64,9 +64,11 @@ function getReconnectCopy(reconnectDeadline: string) {
 
 export function MatchPage() {
   const { matchId = "" } = useParams();
+  const navigate = useNavigate();
   const { user } = useAppContext();
   const {
     error,
+    finalizationFailed,
     liveState,
     loading,
     messages,
@@ -81,6 +83,35 @@ export function MatchPage() {
   const [scoreFlashVisible, setScoreFlashVisible] = useState(false);
   const previousScoreRef = useRef<string | null>(null);
   const countdownValue = useCountdownValue(liveState?.startsAt);
+
+  useEffect(() => {
+    if (!finalizationFailed) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      navigate("/play", { replace: true });
+    }, 4_000);
+
+    return () => window.clearTimeout(timeout);
+  }, [finalizationFailed, navigate]);
+
+  useEffect(() => {
+    if (!liveState || liveState.ranked || playerRole === "spectator") return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const canPause = (liveState.pausesLeft?.[playerRole] ?? 0) > 0;
+        const canUnpause = liveState.status === "paused" && liveState.pauseInfo;
+        if (canPause || canUnpause) {
+          socket?.emit("pause:toggle", { matchId });
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [liveState, playerRole, matchId, socket]);
 
   useEffect(() => {
     if (!liveState) {
@@ -173,7 +204,9 @@ export function MatchPage() {
         liveState ? "page-shell-wide stage-page-shell" : ""
       }`}
     >
-      {error && !summary ? <p className="error-copy">{error}</p> : null}
+      {error && !summary && !finalizationFailed ? (
+        <p className="error-copy">{error}</p>
+      ) : null}
       {liveState ? (
         <section
           className={`match-stage-layout ${chatOpen ? "chat-open" : ""}`}
@@ -357,6 +390,24 @@ export function MatchPage() {
               Watch Replay
             </Link>
             <Link className="ghost-button" to="/play">
+              Back to Arena Hub
+            </Link>
+          </div>
+        </section>
+      ) : finalizationFailed ? (
+        <section className="panel result-stage-panel">
+          <div className="result-stage-copy">
+            <span className="eyebrow">Result Recovery</span>
+            <h1 className="match-title">We could not save that result</h1>
+            <p className="lead-copy">
+              The match ended, but the server could not safely persist the
+              outcome. You will be returned to the arena hub shortly.
+            </p>
+            {error ? <p className="error-copy">{error}</p> : null}
+          </div>
+
+          <div className="hero-actions">
+            <Link className="primary-button" to="/play">
               Back to Arena Hub
             </Link>
           </div>

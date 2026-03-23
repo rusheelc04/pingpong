@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage, LiveMatchState } from "@pingpong/shared";
 import type { Socket } from "socket.io-client";
 
+import { formatAppError } from "../lib/api";
+
 interface ChatPanelProps {
   matchId: string;
   messages: ChatMessage[];
@@ -44,6 +46,15 @@ export function ChatPanel({
 
     logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [messages.length, stickToBottom]);
+
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setError(null), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
 
   return (
     <section className="panel chat-panel">
@@ -108,7 +119,9 @@ export function ChatPanel({
             (result: { ok: boolean; error?: string }) => {
               setSending(false);
               if (!result.ok) {
-                setError(result.error ?? "Could not send message.");
+                setError(
+                  formatAppError(result.error ?? "Could not send message.")
+                );
                 return;
               }
 

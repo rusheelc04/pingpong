@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ping-pong-arena
+    runtime: docker
+    plan: starter
+    region: oregon
+    branch: main
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/healthz
+    # Keep v1 on a single instance. Live queue, rooms, and active matches are process-local.
+    numInstances: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: CLIENT_URL
+        # Set to the exact public HTTPS origin for this Render service or custom domain.
+        sync: false
+      - key: MONGO_URI
+        # Use a Mongo Atlas connection string so production match finalization can use transactions.
+        sync: false
+      - key: SESSION_SECRET
+        # Set a long random secret for secure production sessions.
+        sync: false

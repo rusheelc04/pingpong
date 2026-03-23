@@ -66,7 +66,6 @@ export function serializeLiveState(match: LiveMatch): LiveMatchState {
     },
     ball: { x: match.ball.x, y: match.ball.y },
     score: match.score,
-    spectatorCount: match.spectators.size,
     startedAt: new Date(match.startedAt).toISOString(),
     startsAt: match.startsAt
       ? new Date(match.startsAt).toISOString()
