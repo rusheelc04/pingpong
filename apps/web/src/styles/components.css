@@ -304,34 +304,50 @@ select:focus-visible {
 .countdown-overlay {
   display: grid;
   place-items: center;
-  background: rgba(4, 10, 22, 0.34);
-  backdrop-filter: blur(3px);
+  background: radial-gradient(
+    circle at center,
+    rgba(9, 20, 40, 0.18),
+    rgba(4, 10, 22, 0.36) 68%
+  );
+  backdrop-filter: blur(2px);
   pointer-events: none;
   z-index: 2;
 }
 
-.countdown-chip {
-  min-width: 10rem;
-  padding: 1rem 1.4rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(5, 11, 26, 0.86);
-  text-align: center;
-  display: grid;
-  gap: 0.2rem;
-  justify-items: center;
-  animation: countdownPulse 0.7s ease forwards;
+.countdown-overlay.is-exit {
+  animation: countdownOverlayExit 0.28s ease-in forwards;
 }
 
-.countdown-chip strong {
+.countdown-stage {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: center;
+}
+
+.countdown-beat {
+  min-width: 7rem;
+  display: grid;
+  place-items: center;
+  animation: countdownBeatIn 0.24s ease-out both;
+}
+
+.countdown-beat strong {
   font-family: "Oxanium", sans-serif;
-  font-size: clamp(2.2rem, 7vw, 4rem);
+  font-size: clamp(4.5rem, 13vw, 7rem);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 30px rgba(213, 255, 95, 0.2);
+}
+
+.countdown-beat.is-go strong {
+  font-size: clamp(3.2rem, 9vw, 4.9rem);
+  letter-spacing: 0.08em;
 }
 
 .countdown-label {
-  color: var(--muted);
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
+  color: rgba(236, 245, 255, 0.7);
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 

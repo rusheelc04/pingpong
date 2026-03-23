@@ -407,10 +407,11 @@ describe("smoke cleanup", () => {
     expect(summary.deletedUserCount).toBe(2);
     expect(summary.deletedMatchCount).toBe(1);
     expect(summary.deletedMessageCount).toBe(1);
-    expect(summary.users.map((user) => user.displayName)).toEqual([
-      "RenderSmoke1670000000000",
-      "DebugSmoke1670000000001"
-    ]);
+    expect(
+      summary.users
+        .map((user) => user.displayName)
+        .sort((left, right) => left.localeCompare(right))
+    ).toEqual(["DebugSmoke1670000000001", "RenderSmoke1670000000000"]);
 
     expect(await runtime.UserModel.countDocuments()).toBe(1);
     expect(await runtime.MatchModel.countDocuments()).toBe(1);

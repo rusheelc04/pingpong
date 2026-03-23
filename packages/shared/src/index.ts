@@ -17,8 +17,8 @@ export const GAME_CONSTANTS = {
   winScore: 11,
   winBy: 2,
   replayCaptureMs: 33,
-  matchIntroMs: 2600,
-  scorePauseMs: 900
+  matchIntroMs: 3000,
+  scorePauseMs: 3000
 } as const;
 
 export type MatchMode = "ranked" | "private" | "practice";

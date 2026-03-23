@@ -7,13 +7,25 @@ import { ChatPanel } from "../components/ChatPanel";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { PongBoard } from "../components/PongBoard";
 import { useAppContext } from "../lib/app-context";
-import { getCountdownValue } from "../lib/countdown";
+import {
+  COUNTDOWN_GO_EXIT_MS,
+  createCountdownDisplayState,
+  getCountdownDisplayState,
+  type CountdownDisplayState
+} from "../lib/countdown";
 import { updateClockOffset } from "../lib/live-clock";
 import { useLiveMatchSession } from "../lib/use-live-match-session";
 
-function useCountdownValue(liveState: LiveMatchState | null) {
+function useCountdownState(liveState: LiveMatchState | null) {
   const [now, setNow] = useState(Date.now());
+  const [exitState, setExitState] = useState<CountdownDisplayState | null>(
+    null
+  );
   const clockOffsetRef = useRef<number | null>(null);
+  const previousSequenceRef = useRef<{
+    phase: CountdownDisplayState["phase"];
+    sequenceKey: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!liveState?.serverNowMs) {
@@ -27,8 +39,16 @@ function useCountdownValue(liveState: LiveMatchState | null) {
     );
   }, [liveState?.serverNowMs]);
 
+  const activeState = getCountdownDisplayState({
+    clientNowMs: now,
+    clockOffsetMs: clockOffsetRef.current,
+    countdownPhase: liveState?.countdownPhase,
+    startsAt: liveState?.startsAt,
+    status: liveState?.status
+  });
+
   useEffect(() => {
-    if (!liveState?.startsAt || liveState.status !== "prestart") {
+    if (liveState?.status !== "prestart" && !exitState?.isExit) {
       return;
     }
 
@@ -37,14 +57,53 @@ function useCountdownValue(liveState: LiveMatchState | null) {
     }, 80);
 
     return () => window.clearInterval(interval);
-  }, [liveState?.startsAt, liveState?.status]);
+  }, [exitState?.isExit, liveState?.status]);
 
-  return getCountdownValue({
-    clientNowMs: now,
-    clockOffsetMs: clockOffsetRef.current,
-    startsAt: liveState?.startsAt,
-    status: liveState?.status
-  });
+  useEffect(() => {
+    if (activeState) {
+      previousSequenceRef.current = {
+        phase: activeState.phase,
+        sequenceKey: activeState.sequenceKey
+      };
+      setExitState(null);
+      return;
+    }
+
+    if (liveState?.status === "live" && previousSequenceRef.current) {
+      const previousSequence = previousSequenceRef.current;
+      previousSequenceRef.current = null;
+      setExitState(
+        createCountdownDisplayState({
+          beat: "GO",
+          isExit: true,
+          phase: previousSequence.phase,
+          sequenceKey: previousSequence.sequenceKey
+        })
+      );
+      return;
+    }
+
+    if (liveState?.status !== "live") {
+      previousSequenceRef.current = null;
+      setExitState(null);
+    }
+  }, [activeState, liveState?.status]);
+
+  useEffect(() => {
+    if (!exitState?.isExit) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setExitState((current) =>
+        current?.beatKey === exitState.beatKey ? null : current
+      );
+    }, COUNTDOWN_GO_EXIT_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [exitState]);
+
+  return activeState ?? exitState;
 }
 
 function PauseCountdown({ resumesAt }: { resumesAt: string }) {
@@ -89,7 +148,7 @@ export function MatchPage() {
   const [focusPlay, setFocusPlay] = useState(false);
   const [scoreFlashVisible, setScoreFlashVisible] = useState(false);
   const previousScoreRef = useRef<string | null>(null);
-  const countdownValue = useCountdownValue(liveState);
+  const countdownState = useCountdownState(liveState);
 
   useEffect(() => {
     if (!finalizationFailed) {
@@ -148,9 +207,6 @@ export function MatchPage() {
 
     previousScoreRef.current = nextScoreKey;
   }, [liveState]);
-
-  const countdownLabel =
-    liveState?.countdownPhase === "point-reset" ? "Next serve" : "Match starts";
 
   const viewerPlayer = summary?.players.find(
     (player) => player.userId === user?.userId
@@ -277,7 +333,7 @@ export function MatchPage() {
             </div>
 
             <div className="match-stage-frame">
-              <CountdownOverlay label={countdownLabel} value={countdownValue} />
+              <CountdownOverlay state={countdownState} />
               {liveState.pauseInfo ? (
                 <div className="pause-overlay">
                   <span className="pause-overlay-label">
@@ -299,9 +355,7 @@ export function MatchPage() {
               <PongBoard
                 controlledSide={playerRole === "spectator" ? null : playerRole}
                 interactive={
-                  playerRole !== "spectator" &&
-                  liveState.status === "live" &&
-                  countdownValue === null
+                  playerRole !== "spectator" && liveState.status === "live"
                 }
                 onMove={(position: number) =>
                   socket?.emit("input:move", { matchId, position })
